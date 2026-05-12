@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Wonderland</title>
+    <style>
+        :root {
+            --cream: #f8f3e8;
+            --olive: #63651f;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: Georgia, "Times New Roman", serif;
+            color: var(--cream);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5;
+            display: grid;
+            place-items: center;
+            pointer-events: none;
+        }
+
+        .frame {
+            width: min(92vw, 980px);
+            height: min(84vh, 640px);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 32px;
+            background: transparent;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2.5rem, 5vw, 3.6rem);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+        }
+
+        .content {
+            margin-top: auto;
+            margin-bottom: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            pointer-events: auto;
+            transition: opacity 0.45s ease, transform 0.45s ease;
+        }
+
+        .content.hidden {
+            opacity: 0;
+            transform: translateY(16px);
+            pointer-events: none;
+        }
+
+        .enter-button {
+            min-width: 270px;
+            padding: 16px 28px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--olive);
+            color: var(--cream);
+            font-size: 1.05rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .helper {
+            margin: 0;
+            font-size: clamp(1.35rem, 3vw, 1.9rem);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+        }
+
+        .status {
+            position: fixed;
+            left: 16px;
+            bottom: 16px;
+            z-index: 6;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(248, 243, 232, 0.86);
+            backdrop-filter: blur(10px);
+            font-size: 0.95rem;
+        }
+    </style>
+    <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="overlay">
+        <div class="frame">
+            <h1>Welcome to wonderland</h1>
+            <div class="content" id="content">
+                <button class="enter-button" id="enterButton" type="button">Into the rabbit hole</button>
+                <p class="helper">Click here to enter</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="status" id="status">Rabbit hole wordt geladen...</div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        const content = document.getElementById('content');
+        const enterButton = document.getElementById('enterButton');
+        const statusEl = document.getElementById('status');
+
+        const baseConfig = {
+            modelPosition: new THREE.Vector3(-0.7, 0, 0),
+            modelRotation: new THREE.Euler(-1.4748, 1.5795, 1.7453),
+            modelScale: 20.56,
+            spinSpeed: 2.44,
+            cameraPosition: new THREE.Vector3(-1.5, 17, 2),
+            cameraTarget: new THREE.Vector3(1, -1, -1.5)
+        };
+
+        let loadedScene = null;
+        let journeyStarted = false;
+        let journeyStartTime = 0;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.copy(baseConfig.cameraPosition);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        document.body.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 1.7));
+
+        const keyLight = new THREE.DirectionalLight(0xdce88a, 2.7);
+        keyLight.position.set(4, 8, 4);
+        scene.add(keyLight);
+
+        const fillLight = new THREE.DirectionalLight(0x9fb34d, 1.9);
+        fillLight.position.set(-5, 6, 2);
+        scene.add(fillLight);
+
+        const pointLight = new THREE.PointLight(0xb4c85d, 18, 50, 2);
+        pointLight.position.set(0, 0, 6);
+        scene.add(pointLight);
+
+        const modelWrap = new THREE.Group();
+        modelWrap.position.copy(baseConfig.modelPosition);
+        modelWrap.rotation.copy(baseConfig.modelRotation);
+        scene.add(modelWrap);
+
+        const spinGroup = new THREE.Group();
+        modelWrap.add(spinGroup);
+
+        function setStatus(text) {
+            statusEl.textContent = text;
+        }
+
+        // Centreert en schaalt 3D-object naar gewenste grootte
+        function normalizeObjectForScene(object3d, desiredSize) {
+            object3d.updateWorldMatrix(true, true);
+
+            if (!object3d.userData.centeredForScene) {
+                const box = new THREE.Box3().setFromObject(object3d);
+                const center = new THREE.Vector3();
+                box.getCenter(center);
+                object3d.position.sub(center);
+                object3d.userData.centeredForScene = true;
+            }
+
+            if (!object3d.userData.baseMaxAxis) {
+                object3d.updateWorldMatrix(true, true);
+                const box = new THREE.Box3().setFromObject(object3d);
+                const size = new THREE.Vector3();
+                box.getSize(size);
+                object3d.userData.baseMaxAxis = Math.max(size.x, size.y, size.z) || 1;
+            }
+
+            object3d.scale.setScalar(desiredSize / object3d.userData.baseMaxAxis);
+        }
+
+        // Verbetert materiaal eigenschappen voor betere visuele uitstraling
+        function boostMaterials(root) {
+            root.traverse((child) => {
+                if (!child.isMesh || !child.material) return;
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                materials.forEach((material) => {
+                    material.side = THREE.DoubleSide;
+                    if ('metalness' in material) material.metalness = Math.min(material.metalness ?? 0, 0.35);
+                    if ('roughness' in material) material.roughness = Math.min(material.roughness ?? 1, 0.95);
+                    if ('emissive' in material && material.color) {
+                        material.emissive.copy(material.color).multiplyScalar(0.07);
+                        material.emissiveIntensity = 0.55;
+                    }
+                    material.needsUpdate = true;
+                });
+            });
+        }
+
+        // Maakt fallback 3D-model als GLB niet laadt
+        function createFallbackHole() {
+            const group = new THREE.Group();
+            for (let i = 0; i < 18; i++) {
+                const mesh = new THREE.Mesh(
+                    new THREE.TorusGeometry(3.2 + i * 0.16, 0.18, 10, 48),
+                    new THREE.MeshStandardMaterial({
+                        color: i % 2 === 0 ? 0x607020 : 0x313610,
+                        emissive: 0x151805,
+                        emissiveIntensity: 0.6
+                    })
+                );
+                mesh.rotation.x = Math.PI / 2;
+                mesh.position.y = -i * 0.38;
+                group.add(mesh);
+            }
+            return group;
+        }
+
+        // Laadt 3D-model (GLB) of fallback als dit mislukt
+        const loader = new GLTFLoader();
+        loader.load(
+            'assets/down_the_rabbit_hole_-_alice_in_wonderland.glb',
+            (gltf) => {
+                loadedScene = gltf.scene;
+                boostMaterials(loadedScene);
+                spinGroup.add(loadedScene);
+                normalizeObjectForScene(loadedScene, baseConfig.modelScale);
+                setStatus('Rabbit hole geladen.');
+            },
+            undefined,
+            (error) => {
+                loadedScene = createFallbackHole();
+                spinGroup.add(loadedScene);
+                normalizeObjectForScene(loadedScene, baseConfig.modelScale);
+                setStatus(`GLB laden mislukt, fallback zichtbaar. ${error?.message || error}`);
+            }
+        );
+
+        enterButton.addEventListener('click', () => {
+            if (journeyStarted) return;
+            journeyStarted = true;
+            journeyStartTime = performance.now();
+            content.classList.add('hidden');
+            setStatus('Falling into the rabbit hole...');
+        });
+
+        const clock = new THREE.Clock();
+
+        // Hoofd animation loop: draait model, animates camera bij klik
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            if (journeyStarted) {
+                // Berekent voortgang van vallen (4.8 seconden)
+                const elapsed = (performance.now() - journeyStartTime) / 1000;
+                const progress = Math.min(elapsed / 4.8, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+
+                spinGroup.rotation.y += baseConfig.spinSpeed * 0.02;
+
+                // Interpoleert camera positie en kijk-richting
+                camera.position.x = THREE.MathUtils.lerp(baseConfig.cameraPosition.x, 0.15, eased);
+                camera.position.y = THREE.MathUtils.lerp(baseConfig.cameraPosition.y, 2.6, eased);
+                camera.position.z = THREE.MathUtils.lerp(baseConfig.cameraPosition.z, 0.35, eased);
+                camera.lookAt(
+                    THREE.MathUtils.lerp(baseConfig.cameraTarget.x, 0, eased),
+                    THREE.MathUtils.lerp(baseConfig.cameraTarget.y, -1.4, eased),
+                    THREE.MathUtils.lerp(baseConfig.cameraTarget.z, 0, eased)
+                );
+
+                // Navigeert naar volgende pagina wanneer animatie klaar is
+                if (progress >= 1) {
+                    window.location.href = 'drink-me.html';
+                    return;
+                }
+            } else {
+                camera.position.copy(baseConfig.cameraPosition);
+                camera.lookAt(baseConfig.cameraTarget);
+                spinGroup.rotation.y = 0;
+            }
+
+            // Zachte bobbing van model voor rustiger effect
+            if (!journeyStarted && loadedScene) {
+                loadedScene.position.y = Math.sin(t * 0.7) * 0.02;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
