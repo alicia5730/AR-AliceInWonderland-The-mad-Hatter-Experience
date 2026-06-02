@@ -26,6 +26,7 @@
 
         canvas {
             display: block;
+            touch-action: manipulation;
         }
 
         .overlay {
@@ -105,6 +106,194 @@
             backdrop-filter: blur(10px);
             font-size: 0.95rem;
         }
+
+        body.ready-to-enter {
+            cursor: pointer;
+        }
+
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            display: grid;
+            place-items: center;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.55s ease;
+        }
+
+        .loading-screen.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .loading-stage {
+            position: relative;
+            width: min(520px, 86vw);
+            height: min(380px, 62vh);
+            display: grid;
+            place-items: center;
+        }
+
+        #loadingCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            filter:
+                drop-shadow(0 0 18px rgba(119, 255, 68, 0.55))
+                drop-shadow(0 0 34px rgba(170, 86, 255, 0.45));
+        }
+
+        .loading-text {
+            position: absolute;
+            left: 50%;
+            bottom: 8px;
+            transform: translateX(-50%);
+            color: var(--cream);
+            font-size: clamp(1rem, 3vw, 1.25rem);
+            letter-spacing: 0.08em;
+            text-shadow: 0 0 18px rgba(221,189,255,.8);
+            white-space: nowrap;
+        }
+
+        .rotate-warning{
+            position:fixed;
+            inset:0;
+            z-index:999;
+            display:none;
+            place-items:center;
+            padding:28px;
+            background:
+                linear-gradient(rgba(0,0,0,.82), rgba(0,0,0,.9));
+            text-align:center;
+            color:#fff6e8;
+        }
+
+        .rotate-card{
+            width:min(420px, 92vw);
+            padding:28px 24px;
+            background:rgba(79,31,122,.92);
+            border:3px solid rgba(255,229,111,.88);
+            box-shadow:
+                0 0 28px rgba(255,229,111,.52),
+                0 0 54px rgba(214,120,214,.46),
+                0 18px 38px rgba(0,0,0,.45);
+            clip-path:polygon(1% 9%,7% 5%,16% 7%,24% 4%,37% 6%,48% 3%,60% 6%,73% 4%,85% 7%,97% 5%,99% 92%,91% 96%,79% 93%,65% 97%,52% 94%,39% 97%,26% 94%,14% 97%,2% 92%);
+        }
+
+        .rotate-icon{
+            font-family:Georgia,"Times New Roman",serif;
+            font-size:58px;
+            margin-bottom:12px;
+            color:#ffd56a;
+            text-shadow:0 0 20px rgba(255,213,106,.9);
+            animation:turnPhone 1.25s ease-in-out infinite alternate;
+        }
+
+        .rotate-card h2{
+            font-size:clamp(27px, 8vw, 39px);
+            line-height:1.05;
+            margin-bottom:12px;
+            color:#ffd56a;
+            text-shadow:0 2px 8px rgba(0,0,0,.45);
+        }
+
+        .rotate-card p{
+            font-family:Georgia,"Times New Roman",serif;
+            font-size:18px;
+            line-height:1.35;
+        }
+
+        @keyframes turnPhone{
+            from{ transform:rotate(-8deg) scale(1); }
+            to{ transform:rotate(8deg) scale(1.06); }
+        }
+
+        @media (orientation: portrait) and (max-width: 900px){
+            .rotate-warning{ display:grid; }
+        }
+
+        /* Phone landscape responsive mode */
+        @media (orientation: landscape) and (max-height: 520px) and (max-width: 950px) {
+            .frame {
+                width: 100vw;
+                height: 100svh;
+                padding-top: max(10px, env(safe-area-inset-top));
+                justify-content: flex-start;
+            }
+
+            h1 {
+                max-width: 82vw;
+                font-size: clamp(1.45rem, 5.2vw, 2.25rem);
+                line-height: 1.05;
+            }
+
+            .content {
+                margin-bottom: max(16px, env(safe-area-inset-bottom));
+                gap: 8px;
+            }
+
+            .enter-button {
+                min-width: 210px;
+                padding: 11px 20px;
+                font-size: .92rem;
+                border-radius: 9px;
+            }
+
+            .helper {
+                font-size: clamp(.9rem, 2.5vw, 1.15rem);
+            }
+
+            .status {
+                left: max(8px, env(safe-area-inset-left));
+                bottom: max(8px, env(safe-area-inset-bottom));
+                padding: 7px 10px;
+                font-size: .72rem;
+                opacity: .78;
+            }
+
+            .loading-stage {
+                width: min(360px, 58vw);
+                height: min(240px, 76vh);
+            }
+
+            .rotate-card {
+                padding: 20px 22px;
+            }
+
+            .rotate-icon {
+                font-size: 44px;
+                margin-bottom: 6px;
+            }
+
+            .rotate-card h2 {
+                font-size: clamp(1.5rem, 5vw, 2rem);
+                margin-bottom: 8px;
+            }
+
+            .rotate-card p {
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            h1 {
+                font-size: clamp(2rem, 10vw, 2.8rem);
+                max-width: 92vw;
+            }
+
+            .enter-button {
+                min-width: min(270px, 82vw);
+            }
+
+            .helper {
+                max-width: 88vw;
+                text-align: center;
+            }
+        }
+
+
     </style>
     <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
     <script type="importmap">
@@ -119,15 +308,36 @@
 <body>
     <div class="overlay">
         <div class="frame">
-            <h1>Welcome to wonderland</h1>
+            <h1>Welcome, curious wanderers, to Wonderland!</h1>
             <div class="content" id="content">
                 <button class="enter-button" id="enterButton" type="button">Into the rabbit hole</button>
-                <p class="helper">Click here to enter</p>
+                <p class="helper">Tap anywhere to tumble down the rabbit hole</p>
             </div>
         </div>
     </div>
 
+    <div class="loading-screen" id="loadingScreen" aria-hidden="true">
+        <div class="loading-stage">
+            <canvas id="loadingCanvas"></canvas>
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
+
+<div class="smile"></div>
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
+
     <div class="status" id="status">Rabbit hole wordt geladen...</div>
+
+    <section class="rotate-warning" aria-label="Rotate device warning">
+        <div class="rotate-card">
+            <div class="rotate-icon">↻</div>
+            <h2>Turn your phone sideways</h2>
+            <p>Wonderland works best in landscape mode. Turn your phone sideways to play this scene properly.</p>
+        </div>
+    </section>
+
 
     <script type="module">
         import * as THREE from 'three';
@@ -136,6 +346,9 @@
         const content = document.getElementById('content');
         const enterButton = document.getElementById('enterButton');
         const statusEl = document.getElementById('status');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loadingCanvas = document.getElementById('loadingCanvas');
+        document.body.classList.add('ready-to-enter');
 
         const baseConfig = {
             modelPosition: new THREE.Vector3(-0.7, 0, 0),
@@ -148,6 +361,7 @@
 
         let loadedScene = null;
         let journeyStarted = false;
+        let journeyFinished = false;
         let journeyStartTime = 0;
 
         const scene = new THREE.Scene();
@@ -186,6 +400,85 @@
 
         function setStatus(text) {
             statusEl.textContent = text;
+        }
+
+
+        // Cheshire Cat smile loading GLB scene
+        const loadingScene = new THREE.Scene();
+        const loadingCamera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+        loadingCamera.position.set(0, 0.15, 4.2);
+
+        const loadingRenderer = new THREE.WebGLRenderer({
+            canvas: loadingCanvas,
+            antialias: true,
+            alpha: true,
+            powerPreference: "high-performance"
+        });
+        loadingRenderer.setClearColor(0x000000, 0);
+        loadingRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        loadingRenderer.outputColorSpace = THREE.SRGBColorSpace;
+
+        loadingScene.add(new THREE.AmbientLight(0xffffff, 1.9));
+
+        const loadingKeyLight = new THREE.DirectionalLight(0xbaff75, 2.8);
+        loadingKeyLight.position.set(2.6, 3.4, 4);
+        loadingScene.add(loadingKeyLight);
+
+        const loadingPurpleLight = new THREE.PointLight(0xb86dff, 18, 10, 1.8);
+        loadingPurpleLight.position.set(-1.6, 0.8, 2.8);
+        loadingScene.add(loadingPurpleLight);
+
+        const loadingWrap = new THREE.Group();
+        loadingScene.add(loadingWrap);
+        let loadingSmileModel = null;
+
+        function resizeLoadingRenderer() {
+            const rect = loadingCanvas.getBoundingClientRect();
+            const width = Math.max(1, Math.floor(rect.width));
+            const height = Math.max(1, Math.floor(rect.height));
+            loadingRenderer.setSize(width, height, false);
+            loadingCamera.aspect = width / height;
+            loadingCamera.updateProjectionMatrix();
+        }
+
+        function normalizeLoadingModel(object3d, desiredSize) {
+            object3d.position.set(0, 0, 0);
+            object3d.rotation.set(0, 0, 0);
+            object3d.scale.set(1, 1, 1);
+            object3d.updateWorldMatrix(true, true);
+
+            const box = new THREE.Box3().setFromObject(object3d);
+            const center = new THREE.Vector3();
+            const size = new THREE.Vector3();
+            box.getCenter(center);
+            box.getSize(size);
+
+            const maxAxis = Math.max(size.x, size.y, size.z) || 1;
+            object3d.position.sub(center);
+            object3d.scale.setScalar(desiredSize / maxAxis);
+        }
+
+        function boostLoadingSmileMaterials(root) {
+            root.traverse((child) => {
+                if (!child.isMesh || !child.material) return;
+
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                materials.forEach((material) => {
+                    material.side = THREE.DoubleSide;
+                    material.transparent = false;
+                    material.opacity = 1;
+
+                    if ("emissive" in material) {
+                        material.emissive = new THREE.Color(0x76ff45);
+                        material.emissiveIntensity = 0.85;
+                    }
+
+                    if ("roughness" in material) material.roughness = 0.72;
+                    if ("metalness" in material) material.metalness = 0.05;
+                    material.needsUpdate = true;
+                });
+            });
         }
 
         // Centreert en schaalt 3D-object naar gewenste grootte
@@ -250,6 +543,22 @@
 
         // Laadt 3D-model (GLB) of fallback als dit mislukt
         const loader = new GLTFLoader();
+
+        loader.load(
+            'assets/Loading screen smile.glb',
+            (gltf) => {
+                loadingSmileModel = gltf.scene;
+                boostLoadingSmileMaterials(loadingSmileModel);
+                loadingWrap.add(loadingSmileModel);
+                normalizeLoadingModel(loadingSmileModel, 2.55);
+                loadingSmileModel.rotation.set(0, 0, 0);
+            },
+            undefined,
+            (error) => {
+                console.warn('Loading smile GLB failed:', error);
+            }
+        );
+
         loader.load(
             'assets/down_the_rabbit_hole_-_alice_in_wonderland.glb',
             (gltf) => {
@@ -268,12 +577,32 @@
             }
         );
 
-        enterButton.addEventListener('click', () => {
+        function isPortraitBlocked() {
+            return window.matchMedia('(orientation: portrait) and (max-width: 900px)').matches;
+        }
+
+        function startJourney() {
+            if (isPortraitBlocked()) {
+                setStatus('Turn your phone sideways first.');
+                return;
+            }
+
             if (journeyStarted) return;
             journeyStarted = true;
             journeyStartTime = performance.now();
             content.classList.add('hidden');
+            document.body.classList.remove('ready-to-enter');
             setStatus('Falling into the rabbit hole...');
+        }
+
+        document.addEventListener('pointerdown', (event) => {
+            if (journeyStarted) return;
+            startJourney();
+        });
+
+        enterButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            startJourney();
         });
 
         const clock = new THREE.Clock();
@@ -302,8 +631,13 @@
                 );
 
                 // Navigeert naar volgende pagina wanneer animatie klaar is
-                if (progress >= 1) {
-                    window.location.href = 'drink-me.html';
+                if (progress >= 1 && !journeyFinished) {
+                    journeyFinished = true;
+                    loadingScreen.classList.add('show');
+                    setStatus('Loading next scene...');
+                    setTimeout(() => {
+                        window.location.href = 'drink-me.html';
+                    }, 5000);
                     return;
                 }
             } else {
@@ -317,6 +651,20 @@
                 loadedScene.position.y = Math.sin(t * 0.7) * 0.02;
             }
 
+            if (loadingScreen.classList.contains('show')) {
+                resizeLoadingRenderer();
+
+                if (loadingSmileModel) {
+                    const pulse = 1 + Math.sin(t * 2.1) * 0.035;
+                    loadingSmileModel.scale.multiplyScalar(pulse / (loadingSmileModel.userData.lastPulse || 1));
+                    loadingSmileModel.userData.lastPulse = pulse;
+                    loadingWrap.rotation.y = Math.sin(t * 0.75) * 0.08;
+                    loadingWrap.rotation.z = Math.sin(t * 0.55) * 0.025;
+                }
+
+                loadingRenderer.render(loadingScene, loadingCamera);
+            }
+
             renderer.render(scene, camera);
         }
 
@@ -326,7 +674,9 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            resizeLoadingRenderer();
         });
     </script>
+    <script src="js/orientation-guard.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Wonderland Position Controller - Stable</title>
+
+  <style>
+    :root{
+      --cream:#fff6e8;
+      --purple:#4f1f7a;
+      --pink:#d678d6;
+      --gold:#ffd56a;
+      --turq:#23ffd6;
+      --panel:rgba(18,13,18,.90);
+    }
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:#120d12 url("img/Doors.png") center/cover no-repeat fixed;
+      color:var(--cream);
+      font-family:Georgia,"Times New Roman",serif;
+    }
+
+    canvas{
+      display:block;
+      position:fixed;
+      inset:0;
+      z-index:1;
+    }
+
+    #panel{
+      position:fixed;
+      z-index:30;
+      top:12px;
+      right:12px;
+      width:min(440px, calc(100vw - 24px));
+      max-height:calc(100vh - 24px);
+      overflow:auto;
+      padding:14px;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.24);
+      border-radius:18px;
+      box-shadow:0 16px 48px rgba(0,0,0,.48);
+      backdrop-filter:blur(10px);
+    }
+
+    #panel h1{
+      margin:0 0 8px;
+      color:var(--gold);
+      font-size:20px;
+    }
+
+    #panel p{
+      margin:7px 0;
+      font-size:13px;
+      line-height:1.35;
+      opacity:.92;
+    }
+
+    label{
+      display:block;
+      margin-top:9px;
+      color:#ffeab0;
+      font-size:12px;
+    }
+
+    select,input,button,textarea{
+      width:100%;
+      margin-top:4px;
+      padding:8px 10px;
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:10px;
+      background:rgba(255,255,255,.1);
+      color:white;
+      font-family:inherit;
+      font-size:14px;
+    }
+
+    option{ color:#111; }
+
+    .row{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:7px;
+    }
+
+    .buttons{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .buttons.three{
+      grid-template-columns:repeat(3, 1fr);
+    }
+
+    button{
+      cursor:pointer;
+      border:0;
+      background:linear-gradient(135deg, #d678d6, #4f1f7a);
+      font-weight:bold;
+    }
+
+    button.good{
+      color:#2d1850;
+      background:linear-gradient(135deg, #ffd56a, #23ffd6);
+    }
+
+    button.secondary{
+      background:rgba(255,255,255,.15);
+    }
+
+    button.warn{
+      color:#2d1850;
+      background:linear-gradient(135deg, #ffd56a, #d678d6);
+    }
+
+    #output{
+      height:230px;
+      resize:vertical;
+      font-family:Consolas, "Courier New", monospace;
+      font-size:12px;
+      white-space:pre;
+    }
+
+    #status{
+      position:fixed;
+      z-index:20;
+      left:14px;
+      bottom:14px;
+      max-width:min(760px, calc(100vw - 28px));
+      padding:10px 14px;
+      border-radius:999px;
+      background:rgba(0,0,0,.65);
+      border:1px solid rgba(255,255,255,.22);
+      font-size:14px;
+    }
+
+    .legend{
+      position:fixed;
+      z-index:20;
+      left:14px;
+      top:14px;
+      padding:10px 14px;
+      max-width:360px;
+      border-radius:14px;
+      background:rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.18);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .hidden{ display:none!important; }
+
+    @media(max-width:760px){
+      #panel{
+        left:8px;
+        right:8px;
+        top:auto;
+        bottom:8px;
+        width:auto;
+        max-height:45vh;
+        padding:10px;
+      }
+
+      #panel h1{ font-size:17px; }
+      #panel p, .legend{ font-size:12px; }
+
+      .legend{
+        left:8px;
+        top:8px;
+        max-width:calc(100vw - 16px);
+      }
+
+      #status{
+        display:none;
+      }
+
+      #output{
+        height:150px;
+      }
+    }
+  </style>
+
+  <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports":{
+        "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <section class="legend" id="legend">
+    <b>Stable position controller</b><br>
+    This page does <b>not</b> play the story. Nothing should shuffle around.<br>
+    <b>W</b> move · <b>R</b> rotate · <b>S</b> scale · <b>Q</b> world/local · <b>H</b> hide panel
+  </section>
+
+  <section id="panel">
+    <h1>Position Controller</h1>
+    <p>
+      Select an object, drag the gizmo, then click <b>Copy all coords</b>.
+      Door is only a visible click-area box here; it will be invisible in the real page.
+    </p>
+
+    <label>Object / waypoint</label>
+    <select id="objectSelect"></select>
+
+    <label>Transform mode</label>
+    <select id="modeSelect">
+      <option value="translate">Move / verplaatsen</option>
+      <option value="rotate">Rotate / draaien</option>
+      <option value="scale">Scale / schalen</option>
+    </select>
+
+    <div class="row">
+      <label>X <input id="posX" type="number" step="0.001"></label>
+      <label>Y <input id="posY" type="number" step="0.001"></label>
+      <label>Z <input id="posZ" type="number" step="0.001"></label>
+    </div>
+
+    <div class="row">
+      <label>Rot X <input id="rotX" type="number" step="0.1"></label>
+      <label>Rot Y <input id="rotY" type="number" step="0.1"></label>
+      <label>Rot Z <input id="rotZ" type="number" step="0.1"></label>
+    </div>
+
+    <label>Scale <input id="scale" type="number" step="0.001"></label>
+
+    <div class="buttons three">
+      <button id="applyBtn">Apply</button>
+      <button class="secondary" id="resetCamBtn">Reset cam</button>
+      <button class="secondary" id="focusBtn">Focus selected</button>
+    </div>
+
+    <div class="buttons">
+      <button class="good" id="copySelectedBtn">Copy selected</button>
+      <button class="good" id="copyAllBtn">Copy all coords</button>
+      <button class="warn" id="toggleHelpersBtn">Hide helpers</button>
+      <button class="warn" id="togglePanelBtn">Hide panel</button>
+    </div>
+
+    <label>Coordinates output</label>
+    <textarea id="output" readonly></textarea>
+
+    <p id="loadReport">Loading...</p>
+  </section>
+
+  <div id="status">Loading models...</div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { TransformControls } from "three/addons/controls/TransformControls.js";
+
+    const statusEl = document.getElementById("status");
+    const panel = document.getElementById("panel");
+    const legend = document.getElementById("legend");
+    const objectSelect = document.getElementById("objectSelect");
+    const modeSelect = document.getElementById("modeSelect");
+    const output = document.getElementById("output");
+    const loadReport = document.getElementById("loadReport");
+
+    const inputs = {
+      posX: document.getElementById("posX"),
+      posY: document.getElementById("posY"),
+      posZ: document.getElementById("posZ"),
+      rotX: document.getElementById("rotX"),
+      rotY: document.getElementById("rotY"),
+      rotZ: document.getElementById("rotZ"),
+      scale: document.getElementById("scale")
+    };
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x100912, 0.004);
+
+    const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.05, 1000);
+    camera.position.set(2.25, 0.85, 12.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:"high-performance" });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setClearColor(0x000000, 0);
+    document.body.appendChild(renderer.domElement);
+
+    const orbit = new OrbitControls(camera, renderer.domElement);
+    orbit.target.set(2.25, -3.0, -1.75);
+    orbit.enableDamping = true;
+    orbit.dampingFactor = 0.08;
+    orbit.update();
+
+    const transform = new TransformControls(camera, renderer.domElement);
+    transform.setMode("translate");
+    transform.setSpace("world");
+    transform.setSize(0.75);
+    scene.add(transform);
+
+    transform.addEventListener("dragging-changed", (event) => {
+      orbit.enabled = !event.value;
+    });
+
+    transform.addEventListener("objectChange", () => {
+      syncInputsFromSelected();
+      fillOutput("selected");
+    });
+
+    scene.add(new THREE.HemisphereLight(0xfff6e8, 0x2e1734, 2.4));
+
+    const keyLight = new THREE.DirectionalLight(0xffe0b6, 3.7);
+    keyLight.position.set(3, 6, 4);
+    scene.add(keyLight);
+
+    const frontLight = new THREE.PointLight(0xffffff, 12, 35, 2);
+    frontLight.position.set(0, 1.7, 5);
+    scene.add(frontLight);
+
+    const turquoiseLight = new THREE.PointLight(0x23ffd6, 16, 8, 1.2);
+    turquoiseLight.position.set(-0.831, -2.0, -1.908);
+    scene.add(turquoiseLight);
+
+    const loader = new GLTFLoader();
+    const clock = new THREE.Clock();
+    const mixers = [];
+
+    const objects = {};
+    const helperObjects = [];
+    const modelRoots = {};
+    let selectedKey = null;
+    let helpersVisible = true;
+
+    // Start values are only a starting point. You will replace these by dragging.
+    const placements = {
+      alice: {
+        label: "Alice start position",
+        kind: "model",
+        path: "assets/alice_3d_model.glb",
+        pos: [-3.343, -2.572, 0.172],
+        rot: [-16, 29, 0],
+        scale: 0.013,
+        size: 1.95
+      },
+
+      drinkme: {
+        label: "Drink Me potion",
+        kind: "model",
+        path: "assets/Drink-me.glb",
+        pos: [-0.831, -2.185, -1.908],
+        rot: [-12, 76.4, 1],
+        scale: 0.514,
+        size: 1.05
+      },
+
+      rabbit: {
+        label: "Rabbit start position",
+        kind: "model",
+        path: "assets/official rabbit.glb",
+        pos: [0.05, -4.5, -2.44],
+        rot: [-4, 79, 0],
+        scale: 0.011,
+        size: 1.15
+      },
+
+      doorClickArea: {
+        label: "Door click area (visible only in controller)",
+        kind: "box",
+        pos: [7.851, -3.16, -1.702],
+        rot: [-8, -64, 2],
+        scale: 1,
+        size: [1.15, 2.05, 0.35],
+        color: 0x23ffd6
+      },
+
+      alicePotionWalkTarget: {
+        label: "Alice walks to potion",
+        kind: "sphere",
+        pos: [-2.093, -3.286, -1.355],
+        rot: [-8, 58, 0],
+        scale: 0.18,
+        color: 0xd678d6
+      },
+
+      aliceDoorWalkTarget: {
+        label: "Alice walks to door",
+        kind: "sphere",
+        pos: [5.74, -4.023, -1.519],
+        rot: [-8, 86, 0],
+        scale: 0.18,
+        color: 0x91e8ff
+      },
+
+      aliceCrawlStart: {
+        label: "Alice crawl starts here",
+        kind: "sphere",
+        pos: [6.341, -4.071, -1.558],
+        rot: [-8, 86, 0],
+        scale: 0.18,
+        color: 0xffd56a
+      },
+
+      aliceCrawlDisappear: {
+        label: "Alice disappears here",
+        kind: "sphere",
+        pos: [7.392, -4.027, -1.737],
+        rot: [-8, 86, 0],
+        scale: 0.18,
+        color: 0xff7bba
+      },
+
+      rabbitDoorTarget: {
+        label: "Rabbit disappears here",
+        kind: "sphere",
+        pos: [6.986, -3.758, -1.766],
+        rot: [0, 88, 0],
+        scale: 0.18,
+        color: 0xffffff
+      }
+    };
+
+    function setStatus(text){
+      statusEl.textContent = text;
+    }
+
+    function degToRadArr(arr){
+      return arr.map((v) => THREE.MathUtils.degToRad(v));
+    }
+
+    function radToDeg(v){
+      return THREE.MathUtils.radToDeg(v);
+    }
+
+    function setupMaterial(root, key){
+      root.traverse((child) => {
+        child.visible = true;
+
+        if (!child.isMesh) return;
+
+        child.frustumCulled = false;
+        child.castShadow = false;
+        child.receiveShadow = false;
+
+        const materials = Array.isArray(child.material) ? child.material : [child.material].filter(Boolean);
+
+        materials.forEach((mat) => {
+          mat.side = THREE.DoubleSide;
+          mat.transparent = false;
+          mat.opacity = 1;
+          mat.depthWrite = true;
+          mat.depthTest = true;
+
+          if ("roughness" in mat) mat.roughness = Math.min(mat.roughness ?? 1, 0.9);
+          if ("metalness" in mat) mat.metalness = Math.min(mat.metalness ?? 0, 0.25);
+
+          if (key === "drinkme") {
+            if ("emissive" in mat) {
+              mat.emissive = new THREE.Color(0x23ffd6);
+              mat.emissiveIntensity = 1.3;
+            }
+            if ("color" in mat && mat.color) {
+              mat.color.lerp(new THREE.Color(0x23ffd6), 0.16);
+            }
+          } else if ("emissive" in mat && mat.color) {
+            mat.emissive.copy(mat.color).multiplyScalar(0.04);
+            mat.emissiveIntensity = 0.32;
+          }
+
+          mat.needsUpdate = true;
+        });
+      });
+    }
+
+    function normalizeModelInsideParent(model, group, targetSize){
+      model.position.set(0, 0, 0);
+      model.rotation.set(0, 0, 0);
+      model.scale.set(1, 1, 1);
+
+      group.position.set(0, 0, 0);
+      group.rotation.set(0, 0, 0);
+      group.scale.set(1, 1, 1);
+
+      group.updateWorldMatrix(true, true);
+      model.updateWorldMatrix(true, true);
+
+      let box = new THREE.Box3().setFromObject(model);
+      const rawSize = new THREE.Vector3();
+      box.getSize(rawSize);
+
+      const maxAxis = Math.max(rawSize.x, rawSize.y, rawSize.z) || 1;
+      model.scale.setScalar(targetSize / maxAxis);
+
+      group.updateWorldMatrix(true, true);
+      model.updateWorldMatrix(true, true);
+
+      box = new THREE.Box3().setFromObject(model);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+
+      model.position.x -= center.x;
+      model.position.y -= center.y;
+      model.position.z -= center.z;
+
+      group.updateWorldMatrix(true, true);
+    }
+
+    function applyPlacement(key){
+      const cfg = placements[key];
+      const obj = objects[key];
+      if (!cfg || !obj) return;
+
+      obj.position.set(...cfg.pos);
+      obj.rotation.set(...degToRadArr(cfg.rot || [0,0,0]));
+      obj.scale.setScalar(cfg.scale ?? 1);
+    }
+
+    async function loadModel(key){
+      const cfg = placements[key];
+
+      const group = new THREE.Group();
+      group.name = key;
+      scene.add(group);
+      objects[key] = group;
+
+      try{
+        const gltf = await loader.loadAsync(cfg.path);
+        const model = gltf.scene;
+        model.name = `${key}_model`;
+        setupMaterial(model, key);
+        group.add(model);
+        normalizeModelInsideParent(model, group, cfg.size || 1);
+        applyPlacement(key);
+        modelRoots[key] = model;
+
+        if (key === "drinkme") {
+          const aura = new THREE.Mesh(
+            new THREE.SphereGeometry(0.82, 20, 20),
+            new THREE.MeshBasicMaterial({
+              color:0x23ffd6,
+              transparent:true,
+              opacity:0.22,
+              depthWrite:false,
+              blending:THREE.AdditiveBlending
+            })
+          );
+          group.add(aura);
+
+          const light = new THREE.PointLight(0x23ffd6, 20, 5, 1.25);
+          group.add(light);
+          group.userData.glow = { aura, light };
+        }
+
+        if (gltf.animations && gltf.animations.length) {
+          console.log(`${key} animations:`, gltf.animations.map((a) => a.name));
+
+          const mixer = new THREE.AnimationMixer(model);
+          const idleClip =
+            gltf.animations.find((c) => c.name.toLowerCase().includes("standing")) ||
+            gltf.animations.find((c) => c.name.toLowerCase().includes("idle")) ||
+            gltf.animations[0];
+
+          const action = mixer.clipAction(idleClip);
+          action.reset();
+          action.play();
+          action.timeScale = 0.35;
+          mixers.push({ mixer, key });
+        }
+
+        return `✅ ${key} loaded`;
+      } catch(error) {
+        console.error(`${key} failed`, error);
+
+        const fallback = new THREE.Mesh(
+          new THREE.BoxGeometry(0.6, 1.2, 0.3),
+          new THREE.MeshStandardMaterial({ color: key === "rabbit" ? 0xffffff : 0xff6ba6 })
+        );
+        fallback.name = key + "_fallback";
+        group.add(fallback);
+        normalizeModelInsideParent(fallback, group, cfg.size || 1);
+        applyPlacement(key);
+        return `❌ ${key} failed: ${cfg.path}`;
+      }
+    }
+
+    function makeTextSprite(text){
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "rgba(0,0,0,.65)";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.strokeStyle = "rgba(255,255,255,.9)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4,4,canvas.width-8,canvas.height-8);
+      ctx.font = "bold 30px Georgia";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff6e8";
+      ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map:texture,
+        transparent:true,
+        depthTest:false
+      }));
+      sprite.scale.set(1.75, 0.44, 1);
+      return sprite;
+    }
+
+    function createBoxHelper(key){
+      const cfg = placements[key];
+      const group = new THREE.Group();
+      group.name = key;
+
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(cfg.size[0], cfg.size[1], cfg.size[2]),
+        new THREE.MeshBasicMaterial({
+          color: cfg.color,
+          transparent:true,
+          opacity:0.28,
+          depthWrite:false
+        })
+      );
+
+      const wire = new THREE.BoxHelper(box, cfg.color);
+      const label = makeTextSprite(key);
+      label.position.set(0, cfg.size[1] * 0.62, 0);
+
+      group.add(box, wire, label);
+      scene.add(group);
+      objects[key] = group;
+      helperObjects.push(group);
+      applyPlacement(key);
+    }
+
+    function createSphereHelper(key){
+      const cfg = placements[key];
+
+      const group = new THREE.Group();
+      group.name = key;
+
+      const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 24, 24),
+        new THREE.MeshStandardMaterial({
+          color:cfg.color || 0xffffff,
+          emissive:cfg.color || 0xffffff,
+          emissiveIntensity:0.35
+        })
+      );
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.34, 0.012, 8, 64),
+        new THREE.MeshBasicMaterial({ color:cfg.color || 0xffffff })
+      );
+      ring.rotation.x = Math.PI / 2;
+
+      const label = makeTextSprite(key);
+      label.position.set(0, 0.62, 0);
+
+      group.add(sphere, ring, label);
+      scene.add(group);
+      objects[key] = group;
+      helperObjects.push(group);
+      applyPlacement(key);
+    }
+
+    function createHelpers(){
+      for (const [key, cfg] of Object.entries(placements)) {
+        if (cfg.kind === "box") createBoxHelper(key);
+        if (cfg.kind === "sphere") createSphereHelper(key);
+      }
+    }
+
+    function populateSelect(){
+      objectSelect.innerHTML = "";
+
+      for (const [key, cfg] of Object.entries(placements)) {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = `${key} — ${cfg.label}`;
+        objectSelect.appendChild(option);
+      }
+    }
+
+    function selectObject(key){
+      const obj = objects[key];
+      if (!obj) return;
+
+      selectedKey = key;
+      objectSelect.value = key;
+      transform.attach(obj);
+      syncInputsFromSelected();
+      fillOutput("selected");
+      setStatus(`Selected: ${key}`);
+    }
+
+    function syncInputsFromSelected(){
+      const obj = objects[selectedKey];
+      if (!obj) return;
+
+      inputs.posX.value = obj.position.x.toFixed(3);
+      inputs.posY.value = obj.position.y.toFixed(3);
+      inputs.posZ.value = obj.position.z.toFixed(3);
+
+      inputs.rotX.value = radToDeg(obj.rotation.x).toFixed(1);
+      inputs.rotY.value = radToDeg(obj.rotation.y).toFixed(1);
+      inputs.rotZ.value = radToDeg(obj.rotation.z).toFixed(1);
+
+      const scale = (obj.scale.x + obj.scale.y + obj.scale.z) / 3;
+      inputs.scale.value = scale.toFixed(4);
+    }
+
+    function applyInputsToSelected(){
+      const obj = objects[selectedKey];
+      if (!obj) return;
+
+      obj.position.set(
+        Number(inputs.posX.value) || 0,
+        Number(inputs.posY.value) || 0,
+        Number(inputs.posZ.value) || 0
+      );
+
+      obj.rotation.set(
+        THREE.MathUtils.degToRad(Number(inputs.rotX.value) || 0),
+        THREE.MathUtils.degToRad(Number(inputs.rotY.value) || 0),
+        THREE.MathUtils.degToRad(Number(inputs.rotZ.value) || 0)
+      );
+
+      const s = Number(inputs.scale.value) || 1;
+      obj.scale.setScalar(s);
+
+      fillOutput("selected");
+      setStatus(`Typed values applied to ${selectedKey}`);
+    }
+
+    function getObjectData(key){
+      const obj = objects[key];
+      if (!obj) return null;
+
+      const scale = (obj.scale.x + obj.scale.y + obj.scale.z) / 3;
+
+      return {
+        pos: [
+          Number(obj.position.x.toFixed(3)),
+          Number(obj.position.y.toFixed(3)),
+          Number(obj.position.z.toFixed(3))
+        ],
+        rot: [
+          Number(radToDeg(obj.rotation.x).toFixed(1)),
+          Number(radToDeg(obj.rotation.y).toFixed(1)),
+          Number(radToDeg(obj.rotation.z).toFixed(1))
+        ],
+        scale: Number(scale.toFixed(4))
+      };
+    }
+
+    function makeExportObject(scope = "all"){
+      const keys = scope === "selected" ? [selectedKey] : Object.keys(placements);
+      const result = {};
+
+      for (const key of keys) {
+        result[key] = getObjectData(key);
+      }
+
+      return result;
+    }
+
+    function fillOutput(scope = "all"){
+      output.value = JSON.stringify(makeExportObject(scope), null, 2);
+    }
+
+    async function copyText(text){
+      output.value = text;
+      try{
+        await navigator.clipboard.writeText(text);
+        setStatus("Copied coordinates ✅");
+      } catch(error) {
+        output.select();
+        document.execCommand("copy");
+        setStatus("Coordinates selected. Press Ctrl+C if needed.");
+      }
+    }
+
+    function resetCamera(){
+      camera.position.set(2.25, 0.85, 12.5);
+      orbit.target.set(2.25, -3.0, -1.75);
+      orbit.update();
+    }
+
+    function focusSelected(){
+      const obj = objects[selectedKey];
+      if (!obj) return;
+
+      orbit.target.copy(obj.position);
+      camera.position.set(obj.position.x, obj.position.y + 2.0, obj.position.z + 6.2);
+      orbit.update();
+    }
+
+    function toggleHelpers(){
+      helpersVisible = !helpersVisible;
+      helperObjects.forEach((obj) => {
+        obj.visible = helpersVisible;
+      });
+      document.getElementById("toggleHelpersBtn").textContent = helpersVisible ? "Hide helpers" : "Show helpers";
+    }
+
+    function togglePanel(){
+      panel.classList.toggle("hidden");
+      legend.classList.toggle("hidden");
+    }
+
+    populateSelect();
+    createHelpers();
+
+    const reports = await Promise.all(["alice", "drinkme", "rabbit"].map(loadModel));
+    loadReport.innerHTML = reports.join("<br>");
+
+    selectObject("alice");
+    fillOutput("all");
+    setStatus("Ready. Nothing moves except tiny idle animations. Drag the gizmo.");
+
+    objectSelect.addEventListener("change", () => selectObject(objectSelect.value));
+    modeSelect.addEventListener("change", () => transform.setMode(modeSelect.value));
+    document.getElementById("applyBtn").addEventListener("click", applyInputsToSelected);
+    document.getElementById("resetCamBtn").addEventListener("click", resetCamera);
+    document.getElementById("focusBtn").addEventListener("click", focusSelected);
+    document.getElementById("copySelectedBtn").addEventListener("click", () => copyText(JSON.stringify(makeExportObject("selected"), null, 2)));
+    document.getElementById("copyAllBtn").addEventListener("click", () => copyText(JSON.stringify(makeExportObject("all"), null, 2)));
+    document.getElementById("toggleHelpersBtn").addEventListener("click", toggleHelpers);
+    document.getElementById("togglePanelBtn").addEventListener("click", togglePanel);
+
+    for (const input of Object.values(inputs)) {
+      input.addEventListener("change", applyInputsToSelected);
+    }
+
+    addEventListener("keydown", (event) => {
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      const key = event.key.toLowerCase();
+
+      if (key === "w") {
+        transform.setMode("translate");
+        modeSelect.value = "translate";
+      }
+
+      if (key === "r") {
+        transform.setMode("rotate");
+        modeSelect.value = "rotate";
+      }
+
+      if (key === "s") {
+        transform.setMode("scale");
+        modeSelect.value = "scale";
+      }
+
+      if (key === "q") {
+        transform.setSpace(transform.space === "world" ? "local" : "world");
+        setStatus(`Transform space: ${transform.space}`);
+      }
+
+      if (key === "h") {
+        togglePanel();
+      }
+    });
+
+    function animate(){
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+
+      mixers.forEach(({ mixer }) => {
+        mixer.update(delta * 0.35);
+      });
+
+      if (objects.drinkme) {
+        const glow = objects.drinkme.userData.glow;
+        if (glow) {
+          const pulse = 1 + Math.sin(clock.elapsedTime * 3.4) * 0.08;
+          glow.aura.scale.setScalar(pulse);
+          glow.aura.material.opacity = 0.18 + Math.sin(clock.elapsedTime * 3.4) * 0.05;
+          glow.light.intensity = 16 + Math.sin(clock.elapsedTime * 3.4) * 4;
+        }
+      }
+
+      orbit.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+    });
+  </script>
+</body>
+</html>
