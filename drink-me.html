@@ -1,0 +1,2401 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Drink Me - Smooth Responsive</title>
+
+  <style>
+    :root{
+      --cream:#fff6e8;
+      --purple:#4f1f7a;
+      --pink:#d678d6;
+      --gold:#ffd56a;
+    }
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:#120d12 url("img/Doors.png") center/cover no-repeat fixed;
+      color:var(--cream);
+      font-family:Georgia,"Times New Roman",serif;
+    }
+
+    canvas{
+      display:block;
+      position:fixed;
+      inset:0;
+      z-index:1;
+    }
+
+    .hud{
+      position:fixed;
+      inset:0;
+      z-index:2;
+      pointer-events:none;
+      padding:28px 32px;
+    }
+
+    .back{
+      pointer-events:auto;
+      position:absolute;
+      top:28px;
+      left:32px;
+      width:62px;
+      height:62px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      color:#2d1850;
+      text-decoration:none;
+      font-size:34px;
+      font-weight:bold;
+      background:
+        radial-gradient(circle at 35% 30%, #fff8b8 0 18%, transparent 19%),
+        radial-gradient(circle, #ffe56f 0 54%, #e7b83e 56% 100%);
+      box-shadow:
+        0 0 22px rgba(255,225,105,.85),
+        0 0 46px rgba(255,205,74,.45);
+      border:2px solid rgba(255,255,255,.55);
+      transition:transform .18s ease, filter .18s ease;
+    }
+
+    .back:hover{
+      transform:scale(1.07) rotate(-4deg);
+      filter:brightness(1.08);
+    }
+
+    .message{
+      pointer-events:none;
+      position:absolute;
+      top:70px;
+      left:50%;
+      transform:translateX(-50%);
+      width:min(560px, calc(100vw - 180px));
+      min-height:70px;
+      display:grid;
+      place-items:center;
+      padding:14px 28px;
+      color:#fff;
+      text-align:center;
+      font-size:clamp(17px,2.2vw,24px);
+      line-height:1.25;
+      background:#d678d6;
+      border-radius:7px 10px 8px 11px;
+      box-shadow:0 16px 42px rgba(0,0,0,.26);
+      clip-path:polygon(1% 9%,7% 5%,16% 7%,24% 4%,37% 6%,48% 3%,60% 6%,73% 4%,85% 7%,97% 5%,99% 92%,91% 96%,79% 93%,65% 97%,52% 94%,39% 97%,26% 94%,14% 97%,2% 92%);
+    }
+
+    #sparkleCanvas{
+      position:fixed;
+      inset:0;
+      z-index:3;
+      pointer-events:none;
+      mix-blend-mode:screen;
+    }
+
+    .door-hint{
+      position:fixed;
+      right:8%;
+      bottom:30%;
+      z-index:4;
+      opacity:0;
+      pointer-events:none;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 17px;
+      color:#2d1850;
+      background:
+        radial-gradient(circle at 25% 25%, #fff8bd 0 18%, transparent 19%),
+        linear-gradient(135deg, #ffe985, #ffc94c);
+      border:2px solid rgba(255,255,255,.78);
+      border-radius:999px;
+      font-size:18px;
+      font-weight:bold;
+      box-shadow:
+        0 0 22px rgba(255,213,106,.88),
+        0 0 44px rgba(255,213,106,.45);
+      transform:translateY(12px) scale(.96);
+      transition:opacity .45s ease, transform .45s ease;
+    }
+
+    .door-hint.show{
+      opacity:1;
+      transform:translateY(0) scale(1);
+      animation:floatHint 1.25s ease-in-out infinite alternate;
+    }
+
+    .door-hint .key{
+      font-size:24px;
+      animation:keyWiggle .8s ease-in-out infinite alternate;
+    }
+
+    .potion-hint{
+      position:fixed;
+      z-index:4;
+      opacity:0;
+      pointer-events:none;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 16px;
+      color:#2d1850;
+      background:
+        radial-gradient(circle at 25% 25%, #fff8bd 0 18%, transparent 19%),
+        linear-gradient(135deg, #f6d382, #d67acf);
+      border:2px solid rgba(255,255,255,.78);
+      border-radius:999px;
+      font-size:18px;
+      font-weight:bold;
+      box-shadow:
+        0 0 24px rgba(214,120,207,.95),
+        0 0 52px rgba(255,213,106,.48);
+      transform:translate(-50%, -50%) translateY(12px) scale(.96);
+      transition:opacity .35s ease, transform .35s ease;
+    }
+
+    .potion-hint.show{
+      opacity:1;
+      transform:translate(-50%, -50%) translateY(0) scale(1);
+      animation:potionPulse 1s ease-in-out infinite alternate;
+    }
+
+    .potion-hint .bottle{
+      font-size:24px;
+      animation:keyWiggle .8s ease-in-out infinite alternate;
+    }
+
+    @keyframes potionPulse{
+      from{ filter:brightness(1); }
+      to{ filter:brightness(1.2); }
+    }
+
+
+    @keyframes floatHint{
+      from{ transform:translateY(0) scale(1); }
+      to{ transform:translateY(-9px) scale(1.02); }
+    }
+
+    @keyframes keyWiggle{
+      from{ transform:rotate(-9deg); }
+      to{ transform:rotate(9deg); }
+    }
+
+
+    .skip{
+      pointer-events:auto;
+      position:absolute;
+      top:28px;
+      right:32px;
+      min-width:120px;
+      height:46px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.55);
+      color:#2d1850;
+      text-decoration:none;
+      font-size:18px;
+      font-weight:bold;
+      font-family:Georgia,"Times New Roman",serif;
+      background:
+        radial-gradient(circle at 30% 25%, #fff8b8 0 14%, transparent 15%),
+        linear-gradient(135deg, #ffe56f, #d678d6);
+      box-shadow:
+        0 0 18px rgba(255,225,105,.75),
+        0 0 38px rgba(214,120,214,.38);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition:transform .18s ease, filter .18s ease;
+    }
+
+    .skip:hover{
+      transform:scale(1.06) rotate(2deg);
+      filter:brightness(1.08);
+    }
+
+    .skip:active{
+      transform:scale(.98);
+    }
+
+    .skip:disabled{
+      opacity:.72;
+      cursor:default;
+      transform:none;
+    }
+
+    @media(max-width:760px){
+      .hud{ padding:14px; }
+
+      .back{
+        top:14px;
+        left:14px;
+        width:52px;
+        height:52px;
+        font-size:29px;
+      }
+
+      .skip{
+        top:17px;
+        right:14px;
+        min-width:96px;
+        height:40px;
+        font-size:15px;
+      }
+
+      .message{
+        top:92px;
+        width:min(430px, calc(100vw - 34px));
+        font-size:17px;
+        padding:12px 18px;
+      }
+
+      .door-hint{
+        right:5%;
+        bottom:26%;
+        font-size:14px;
+        padding:9px 13px;
+      }
+
+      .door-hint .key{
+        font-size:20px;
+      }
+    }
+
+    /* Potion text hint removed: the potion itself now glows turquoise instead. */
+    .potion-hint,
+    .potion-hint.show{
+      display:none!important;
+      opacity:0!important;
+      pointer-events:none!important;
+    }
+
+    .door-hint,
+    .door-hint.show{
+      display:none!important;
+      opacity:0!important;
+      pointer-events:none!important;
+    }
+
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.55s ease;
+    }
+
+    .loading-screen.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .loading-stage {
+      position: relative;
+      width: min(520px, 86vw);
+      height: min(380px, 62vh);
+      display: grid;
+      place-items: center;
+    }
+
+
+    #loadingCanvas {
+      position: static !important;
+      inset: auto !important;
+      z-index: auto !important;
+      width: 100%;
+      height: 100%;
+      display: block;
+      transform: none;
+      filter:
+        drop-shadow(0 0 18px rgba(119, 255, 68, 0.55))
+        drop-shadow(0 0 34px rgba(170, 86, 255, 0.45));
+    }
+
+    .loading-text {
+      position: absolute;
+      left: 50%;
+      bottom: 8px;
+      transform: translateX(-50%);
+      color: var(--cream);
+      font-size: clamp(1rem, 3vw, 1.25rem);
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 18px rgba(221,189,255,.8);
+      white-space: nowrap;
+    }
+
+    .rotate-warning{
+      position:fixed;
+      inset:0;
+      z-index:999;
+      display:none;
+      place-items:center;
+      padding:28px;
+      background:
+        linear-gradient(rgba(18,13,24,.78), rgba(18,13,24,.88)),
+        url("img/Doors.png") center/cover no-repeat;
+      text-align:center;
+      color:#fff6e8;
+    }
+
+    .rotate-card{
+      width:min(420px, 92vw);
+      padding:28px 24px;
+      background:rgba(79,31,122,.92);
+      border:3px solid rgba(255,229,111,.88);
+      box-shadow:
+        0 0 28px rgba(255,229,111,.52),
+        0 0 54px rgba(214,120,214,.46),
+        0 18px 38px rgba(0,0,0,.45);
+      clip-path:polygon(1% 9%,7% 5%,16% 7%,24% 4%,37% 6%,48% 3%,60% 6%,73% 4%,85% 7%,97% 5%,99% 92%,91% 96%,79% 93%,65% 97%,52% 94%,39% 97%,26% 94%,14% 97%,2% 92%);
+    }
+
+    .rotate-icon{
+      font-family:Georgia,"Times New Roman",serif;
+      font-size:58px;
+      margin-bottom:12px;
+      color:#ffd56a;
+      text-shadow:0 0 20px rgba(255,213,106,.9);
+      animation:turnPhone 1.25s ease-in-out infinite alternate;
+    }
+
+    .rotate-card h2{
+      font-size:clamp(27px, 8vw, 39px);
+      line-height:1.05;
+      margin-bottom:12px;
+      color:#ffd56a;
+      text-shadow:0 2px 8px rgba(0,0,0,.45);
+    }
+
+    .rotate-card p{
+      font-family:Georgia,"Times New Roman",serif;
+      font-size:18px;
+      line-height:1.35;
+    }
+
+    @keyframes turnPhone{
+      from{ transform:rotate(-8deg) scale(1); }
+      to{ transform:rotate(8deg) scale(1.06); }
+    }
+
+    @media (orientation: portrait) and (max-width: 900px){
+      .rotate-warning{ display:grid; }
+    }
+
+    /* ===== CLEAN PHONE LANDSCAPE RESPONSIVE MODE =====
+       Laptop blijft hetzelfde. Telefoon landscape past UI/loading aan,
+       zonder de hele 3D-scene als platte laag te schalen. */
+    @media (orientation: landscape) and (max-height: 540px) and (max-width: 980px){
+      html, body{
+        height:100dvh;
+      }
+
+      .hud{
+        padding:
+          max(8px, env(safe-area-inset-top))
+          max(12px, env(safe-area-inset-right))
+          max(8px, env(safe-area-inset-bottom))
+          max(12px, env(safe-area-inset-left));
+      }
+
+      .back{
+        top:max(9px, env(safe-area-inset-top));
+        left:max(10px, env(safe-area-inset-left));
+        width:44px;
+        height:44px;
+        font-size:27px;
+      }
+
+      .skip{
+        top:max(11px, env(safe-area-inset-top));
+        right:max(12px, env(safe-area-inset-right));
+        min-width:82px;
+        height:34px;
+        font-size:13px;
+      }
+
+      .message{
+        top:max(10px, env(safe-area-inset-top));
+        width:min(430px, calc(100vw - 210px));
+        min-height:42px;
+        padding:8px 18px;
+        font-size:clamp(13px, 2.3vw, 16px);
+        line-height:1.15;
+      }
+
+      .loading-stage{
+        width:min(300px, 48vw);
+        height:min(210px, 64vh);
+      }
+
+      #loadingCanvas{
+        transform:scale(.78);
+        transform-origin:center center;
+      }
+
+      .loading-text{
+        bottom:0;
+        font-size:.9rem;
+      }
+
+      .rotate-card{
+        width:min(360px, 88vw);
+        padding:20px 22px;
+      }
+
+      .rotate-icon{
+        font-size:44px;
+        margin-bottom:6px;
+      }
+
+      .rotate-card h2{
+        font-size:clamp(1.5rem, 5vw, 2rem);
+        margin-bottom:8px;
+      }
+
+      .rotate-card p{
+        font-size:15px;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 390px) and (max-width: 900px){
+      .back{
+        width:40px;
+        height:40px;
+        font-size:25px;
+      }
+
+      .skip{
+        min-width:74px;
+        height:31px;
+        font-size:12px;
+      }
+
+      .message{
+        width:min(360px, calc(100vw - 190px));
+        min-height:36px;
+        padding:7px 14px;
+        font-size:12px;
+      }
+
+      .loading-stage{
+        width:min(255px, 42vw);
+        height:min(175px, 58vh);
+      }
+
+      #loadingCanvas{
+        transform:scale(.68);
+      }
+    }
+
+  </style>
+
+  <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+    {
+      "imports":{
+        "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+</head>
+
+<body>
+  <audio id="drinkSound" src="assets/drink-me-sound.mp3" preload="auto"></audio>
+  <div class="hud">
+    <a class="back" href="index.html" title="Terug naar start">←</a>
+    <button class="skip" id="skipBtn" type="button">Skip</button>
+    <div class="message" id="status">You’re too big... try something else.</div>
+  </div>
+
+  <div class="door-hint" id="doorHint" aria-hidden="true"></div>
+
+
+  <div class="potion-hint" id="potionHint">
+    <span class="bottle">🧪</span>
+    <span></span>
+  </div>
+
+  <canvas id="sparkleCanvas"></canvas>
+
+  <div class="loading-screen" id="loadingScreen" aria-hidden="true">
+    <div class="loading-stage">
+      <canvas id="loadingCanvas"></canvas>
+      <div class="loading-text">Loading...</div>
+    </div>
+  </div>
+
+
+  <section class="rotate-warning" aria-label="Rotate device warning">
+    <div class="rotate-card">
+      <div class="rotate-icon">↻</div>
+      <h2>Turn your phone sideways</h2>
+      <p>Wonderland works best in landscape mode. Turn your phone sideways to play this scene properly.</p>
+    </div>
+  </section>
+
+
+  <script type="module">
+    import * as THREE from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    const statusEl = document.getElementById("status");
+    const skipBtn = document.getElementById("skipBtn");
+    const doorHint = document.getElementById("doorHint");
+    const potionHint = document.getElementById("potionHint");
+    const loadingScreen = document.getElementById("loadingScreen");
+    const loadingCanvas = document.getElementById("loadingCanvas");
+    const loadingScreenSeconds = 5;
+    const drinkSound = document.getElementById("drinkSound");
+
+    if (drinkSound) {
+      drinkSound.volume = 0.75;
+    }
+
+    function playDrinkMeSound(){
+      if (!drinkSound) return;
+
+      drinkSound.currentTime = 0;
+      const playPromise = drinkSound.play();
+
+      if (playPromise) {
+        playPromise.catch((error) => {
+          console.warn("Drink Me sound could not play:", error);
+        });
+      }
+    }
+
+
+    const BASE_VIEWPORT = { width: 1366, height: 768, aspect: 1366 / 768 };
+
+    function clamp(value, min, max){
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerpNumber(a, b, t){
+      return a + (b - a) * t;
+    }
+
+    function isPhoneLandscapeMode(){
+      // Telefoon-landscape + Chrome DevTools responsive preview.
+      // Ruim gezet, zodat iPhone 14 Pro Max preview óók actief blijft bij schaal/DPR.
+      return innerWidth > innerHeight
+        && Math.min(innerWidth, innerHeight) <= 800
+        && Math.max(innerWidth, innerHeight) <= 1500;
+    }
+
+    function getPhoneResponsiveAmount(){
+      if (!isPhoneLandscapeMode()) return 0;
+
+      const shortSide = Math.min(innerWidth, innerHeight);
+      const heightAmount = clamp((BASE_VIEWPORT.height - shortSide) / (BASE_VIEWPORT.height - 360), 0, 1);
+      const aspectAmount = clamp(((innerWidth / innerHeight) - BASE_VIEWPORT.aspect) / 0.45, 0, 1);
+
+      return clamp((heightAmount * 0.72) + (aspectAmount * 0.28), 0, 1);
+    }
+
+    function getResponsiveCameraConfig(){
+      // Belangrijk: bij telefoon NIET meer lerpen/verschuiven.
+      // Jouw telefoon-coördinaten zijn al ingemeten voor deze camera.
+      // Dus: phone placements 1-op-1 + vaste camera = geen dubbele correctie.
+      if (isPhoneLandscapeMode()) {
+        return {
+          fov: 41.9,
+          x: -0.4,
+          y: 2.27,
+          z: 12.57,
+          targetX: 2.25,
+          targetY: -3.0,
+          targetZ: -1.75
+        };
+      }
+
+      return {
+        fov: 48,
+        x: 2.25,
+        y: 0.85,
+        z: 12.5,
+        targetX: 2.25,
+        targetY: -3.0,
+        targetZ: -1.75
+      };
+    }
+
+    function cloneConfig(config){
+      return {
+        ...config,
+        pos: Array.isArray(config.pos) ? [...config.pos] : config.pos,
+        rot: Array.isArray(config.rot) ? [...config.rot] : config.rot,
+        size: Array.isArray(config.size) ? [...config.size] : config.size
+      };
+    }
+
+    function getResponsivePlacement(key){
+      const base = placements[key];
+      if (!base) return base;
+
+      const cfg = cloneConfig(base);
+
+      // Laptop/desktop blijft exact de originele waarden gebruiken.
+      // In telefoon-landscape gebruiken we de apart ingemeten telefoon-coördinaten.
+      if (!isPhoneLandscapeMode()) return cfg;
+
+      const phone = phonePlacements[key];
+      if (!phone) return cfg;
+
+      if (Array.isArray(phone.pos)) cfg.pos = [...phone.pos];
+      if (Array.isArray(phone.rot)) cfg.rot = [...phone.rot];
+      if (typeof phone.scale === "number") cfg.scale = phone.scale;
+
+      return cfg;
+    }
+
+    function syncResponsiveDoorObjects(){
+      if (!objects.doorClickArea && !doorPulseIndicator) return;
+
+      const cfg = getResponsivePlacement("doorClickArea");
+
+      if (objects.doorClickArea) {
+        objects.doorClickArea.position.set(...cfg.pos);
+        objects.doorClickArea.rotation.set(...degToRadArr(cfg.rot || [0, 0, 0]));
+        objects.doorClickArea.scale.setScalar(cfg.scale || 1);
+      }
+
+      if (doorPulseIndicator?.group) {
+        doorPulseIndicator.group.position.set(...cfg.pos);
+        doorPulseIndicator.group.rotation.set(...degToRadArr(cfg.rot || [0, 0, 0]));
+        doorPulseIndicator.group.scale.setScalar(cfg.scale || 1);
+      }
+
+      continuousSparkleAnchors.rabbitDoor.world = [...cfg.pos];
+    }
+
+    function syncResponsiveSparkleAnchors(){
+      const drinkCfg = getResponsivePlacement("drinkme");
+      const doorCfg = getResponsivePlacement("doorClickArea");
+
+      continuousSparkleAnchors.potionTop.world = [
+        drinkCfg.pos[0],
+        drinkCfg.pos[1] + 0.52,
+        drinkCfg.pos[2]
+      ];
+
+      continuousSparkleAnchors.rabbitDoor.world = [...doorCfg.pos];
+    }
+
+
+    const setStatus = (text) => {
+      statusEl.textContent = text;
+    };
+
+    const sparkleCanvas = document.getElementById("sparkleCanvas");
+    const sparkleCtx = sparkleCanvas.getContext("2d");
+    const sparkles = [];
+    const MAX_SPARKLES = 520;
+
+    let sparkleTimer = 0;
+    let sparkleSpawnAccumulator = 0;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x100912, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.05, 1000);
+    const cameraBase = new THREE.Vector3(2.25, 0.85, 12.5);
+    const lookTarget = new THREE.Vector3(2.25, -3.0, -1.75);
+
+    camera.position.copy(cameraBase);
+    camera.lookAt(lookTarget);
+
+    const smoothCameraPos = cameraBase.clone();
+    const smoothLookTarget = lookTarget.clone();
+    const tempCameraPos = new THREE.Vector3();
+    const tempLookTarget = new THREE.Vector3();
+
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, isPhoneLandscapeMode() ? 1.1 : (innerWidth <= 760 ? 1.15 : 1.5)));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setClearColor(0x000000, 0);
+    document.body.appendChild(renderer.domElement);
+
+    // Cheshire Cat smile loading GLB scene — same setup as intro page
+    const loadingScene = new THREE.Scene();
+    const loadingCamera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+    loadingCamera.position.set(0, 0.15, 4.2);
+
+    const loadingRenderer = new THREE.WebGLRenderer({
+      canvas: loadingCanvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance"
+    });
+    loadingRenderer.setClearColor(0x000000, 0);
+    loadingRenderer.setPixelRatio(Math.min(devicePixelRatio, isPhoneLandscapeMode() ? 1.05 : 1.5));
+    loadingRenderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    loadingScene.add(new THREE.AmbientLight(0xffffff, 1.9));
+
+    const loadingKeyLight = new THREE.DirectionalLight(0xbaff75, 2.8);
+    loadingKeyLight.position.set(2.6, 3.4, 4);
+    loadingScene.add(loadingKeyLight);
+
+    const loadingPurpleLight = new THREE.PointLight(0xb86dff, 18, 10, 1.8);
+    loadingPurpleLight.position.set(-1.6, 0.8, 2.8);
+    loadingScene.add(loadingPurpleLight);
+
+    const loadingWrap = new THREE.Group();
+    loadingScene.add(loadingWrap);
+    let loadingSmileModel = null;
+
+    function resizeLoadingRenderer() {
+      const rect = loadingCanvas.getBoundingClientRect();
+      const width = Math.max(1, Math.floor(rect.width));
+      const height = Math.max(1, Math.floor(rect.height));
+      loadingRenderer.setPixelRatio(Math.min(devicePixelRatio, isPhoneLandscapeMode() ? 1.05 : 1.5));
+      loadingRenderer.setSize(width, height, false);
+      loadingCamera.aspect = width / height;
+      loadingCamera.position.z = isPhoneLandscapeMode() ? 5.35 : 4.2;
+      loadingCamera.updateProjectionMatrix();
+
+      if (loadingSmileModel && loadingSmileModel.userData.normalizedMaxAxis) {
+        const desiredSize = isPhoneLandscapeMode() ? 1.65 : 2.55;
+        loadingSmileModel.userData.baseScale = desiredSize / loadingSmileModel.userData.normalizedMaxAxis;
+      }
+    }
+
+    function normalizeLoadingModel(object3d, desiredSize) {
+      object3d.position.set(0, 0, 0);
+      object3d.rotation.set(0, 0, 0);
+      object3d.scale.set(1, 1, 1);
+      object3d.updateWorldMatrix(true, true);
+
+      const box = new THREE.Box3().setFromObject(object3d);
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+      box.getCenter(center);
+      box.getSize(size);
+
+      const maxAxis = Math.max(size.x, size.y, size.z) || 1;
+      object3d.position.sub(center);
+      object3d.scale.setScalar(desiredSize / maxAxis);
+      object3d.userData.baseScale = object3d.scale.x;
+      object3d.userData.normalizedMaxAxis = maxAxis;
+      object3d.userData.lastPulse = 1;
+    }
+
+    function boostLoadingSmileMaterials(root) {
+      root.traverse((child) => {
+        if (!child.isMesh || !child.material) return;
+
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+        materials.forEach((material) => {
+          material.side = THREE.DoubleSide;
+          material.transparent = false;
+          material.opacity = 1;
+
+          if ("emissive" in material) {
+            material.emissive = new THREE.Color(0x76ff45);
+            material.emissiveIntensity = 0.85;
+          }
+
+          if ("roughness" in material) material.roughness = 0.72;
+          if ("metalness" in material) material.metalness = 0.05;
+          material.needsUpdate = true;
+        });
+      });
+    }
+
+    function showLoadingAndGo(targetUrl) {
+      if (loadingScreen.classList.contains("show")) return;
+
+      loadingScreen.classList.add("show");
+      setStatus("Loading next scene...");
+
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, loadingScreenSeconds * 1000);
+    }
+
+
+    scene.add(new THREE.HemisphereLight(0xfff6e8, 0x2e1734, 2.8));
+
+    const keyLight = new THREE.DirectionalLight(0xffe0b6, 4.3);
+    keyLight.position.set(3, 6, 4);
+    scene.add(keyLight);
+
+    const pinkFill = new THREE.PointLight(0xff98cf, 28, 45, 2);
+    pinkFill.position.set(-3, 2, 2.4);
+    scene.add(pinkFill);
+
+    const frontLight = new THREE.PointLight(0xffffff, 20, 35, 2);
+    frontLight.position.set(0, 1.7, 4);
+    scene.add(frontLight);
+
+    const loader = new GLTFLoader();
+
+    loader.load(
+      "assets/Loading screen smile.glb",
+      (gltf) => {
+        loadingSmileModel = gltf.scene;
+        boostLoadingSmileMaterials(loadingSmileModel);
+        loadingWrap.add(loadingSmileModel);
+        normalizeLoadingModel(loadingSmileModel, isPhoneLandscapeMode() ? 1.65 : 2.55);
+        loadingSmileModel.rotation.set(0, 0, 0);
+      },
+      undefined,
+      (error) => {
+        console.warn("Loading smile GLB failed:", error);
+      }
+    );
+
+    const clock = new THREE.Clock();
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+
+    const mixers = [];
+    const pickables = [];
+    const objects = {};
+    const modelRoots = {};
+
+    let drinkmeModel = null;
+    let potionGlowAura = null;
+    let potionGlowLight = null;
+    let doorPulseIndicator = null;
+    let aliceMixer = null;
+    let aliceActions = {};
+    let currentAliceAction = null;
+
+    let rabbitMixer = null;
+    let rabbitAction = null;
+
+    let hasDrunk = false;
+    let shrinkProgress = 0;
+    let doorUnlocked = false;
+
+    let rabbitIntroTime = 0;
+    let rabbitHasDisappeared = false;
+    let rabbitDisappearSparklesDone = false;
+
+    const state = {
+      phase: "loading",
+      phaseTime: 0,
+      tween: null,
+      doorOpenProgress: 0,
+      crawlStarted: false,
+      doorSequenceStarted: false
+    };
+
+    const rabbitStartPos = new THREE.Vector3(3.205, -9.22, -1.165);
+    const rabbitRunEndPos = new THREE.Vector3(12.381, -8.252, -0.552);
+
+    const rabbitFaceCameraY = 79;
+    const rabbitRunRightY = 88;
+
+    const placements = {
+      alice: {
+        path: "assets/alice_3d_model.glb",
+        pos: [-2.994, -6.781, 1.517],
+        rot: [-18.5, 35, 0],
+        scale: 0.019,
+        size: 1.95
+      },
+
+      rabbit: {
+        path: "assets/official rabbit.glb",
+        pos: [rabbitStartPos.x, rabbitStartPos.y, rabbitStartPos.z],
+        rot: [-4, rabbitFaceCameraY, 0],
+        scale: 0.011,
+        size: 1.15,
+        animationSpeed: 1
+      },
+
+      drinkme: {
+        path: "assets/Drink-me.glb",
+        pos: [1.111, -6.023, -0.871],
+        rot: [-12, 76.4, 1],
+        scale: 0.514,
+        size: 1.05
+      },
+
+      // No visible door model. This is only the invisible clickable area.
+      doorClickArea: {
+        pos: [12.518, -7.474, -0.537],
+        rot: [-8, -64, 2],
+        scale: 1,
+        size: [1.15, 2.05, 0.35]
+      },
+
+      alicePotionWalkTarget: {
+        pos: [-1.573, -7.837, -0.125],
+        rot: [-8, 58, 0],
+        scale: 0.18
+      },
+
+      aliceDoorWalkTarget: {
+        pos: [5.567, -8.608, -0.28],
+        rot: [-8, 86, 0],
+        scale: 0.18
+      },
+
+      aliceCrawlStart: {
+        pos: [10.666, -8.645, -0.322],
+        rot: [-8, 86, 0],
+        scale: 0.18
+      },
+
+      aliceCrawlDisappear: {
+        pos: [13.248, -8.312, -0.579],
+        rot: [-8, 86, 0],
+        scale: 0.18
+      },
+
+      rabbitDoorTarget: {
+        pos: [12.381, -8.252, -0.552],
+        rot: [0, 88, 0],
+        scale: 0.18
+      }
+    };
+
+
+    const phonePlacements = {
+      alice: {
+        pos: [-1.956, -6.688, 1.146],
+        rot: [-14.9, 9.5, -5.8],
+        scale: 0.02
+      },
+      drinkme: {
+        pos: [0.719, -3.64, 2.981],
+        rot: [-16.5, 85.6, -0.6],
+        scale: 0.513
+      },
+      rabbit: {
+        pos: [2.987, -8.488, -0.812],
+        rot: [-4, 79, 0],
+        scale: 0.019
+      },
+      doorClickArea: {
+        pos: [13.307, -8.26, 0.705],
+        rot: [-8, -64, 2],
+        scale: 1.132
+      },
+      alicePotionWalkTarget: {
+        pos: [-0.867, -5.953, 1.811],
+        rot: [-8, 58, 0],
+        scale: 0.18
+      },
+      aliceDoorWalkTarget: {
+        pos: [4.836, -8.142, -0.587],
+        rot: [-8, 86, 0],
+        scale: 0.18
+      },
+      aliceCrawlStart: {
+        pos: [9.546, -8.687, 0.288],
+        rot: [-8, 86, 0],
+        scale: 0.18
+      },
+      aliceCrawlDisappear: {
+        pos: [13.139, -8.735, 0.617],
+        rot: [-8, 86, 0],
+        scale: 0.18
+      },
+      rabbitDoorTarget: {
+        pos: [12.811, -8.749, 0.679],
+        rot: [0, 88, 0],
+        scale: 0.18
+      }
+    };
+
+
+    function logActiveResponsiveModeOnce(){
+      if (window.__wonderlandLoggedMode) return;
+      window.__wonderlandLoggedMode = true;
+      console.log("Wonderland placement mode:", isPhoneLandscapeMode() ? "PHONE EXACT COORDINATES" : "DESKTOP COORDINATES", { width: innerWidth, height: innerHeight });
+    }
+
+    const continuousSparkleAnchors = {
+      potionTop: {
+        world: [1.111, -5.50, -0.871],
+        screenOffset: [0, -18],
+        radius: 38,
+        rate: 28,
+        accumulator: 0
+      },
+
+      rabbitDoor: {
+        world: [12.518, -7.474, -0.537],
+        screenOffset: [18, -40],
+        radius: 54,
+        rate: 30,
+        accumulator: 0
+      }
+    };
+
+    function resizeSparkleCanvas(){
+      const sparkleRatio = Math.min(devicePixelRatio, (innerWidth <= 760 || isPhoneLandscapeMode()) ? 1 : 1.35);
+      sparkleCanvas.width = Math.floor(innerWidth * sparkleRatio);
+      sparkleCanvas.height = Math.floor(innerHeight * sparkleRatio);
+      sparkleCanvas.style.width = innerWidth + "px";
+      sparkleCanvas.style.height = innerHeight + "px";
+      sparkleCtx.setTransform(sparkleRatio, 0, 0, sparkleRatio, 0, 0);
+    }
+
+    resizeSparkleCanvas();
+    logActiveResponsiveModeOnce();
+
+    function degToRadArr(arr){
+      return arr.map((v) => THREE.MathUtils.degToRad(v));
+    }
+
+    function getPlacementRotY(key){
+      const cfg = getResponsivePlacement(key);
+      return THREE.MathUtils.degToRad((cfg.rot && cfg.rot[1]) || 0);
+    }
+
+    function applyPlacement(key){
+      const cfg = getResponsivePlacement(key);
+      const group = objects[key];
+
+      group.position.set(...cfg.pos);
+      group.rotation.set(...degToRadArr(cfg.rot));
+      group.scale.setScalar(cfg.scale);
+    }
+
+    function setupMaterial(root){
+      root.traverse((child) => {
+        child.visible = true;
+
+        if (!child.isMesh) return;
+
+        child.visible = true;
+        child.frustumCulled = false;
+        child.castShadow = false;
+        child.receiveShadow = false;
+
+        const materials = Array.isArray(child.material) ? child.material : [child.material].filter(Boolean);
+
+        materials.forEach((mat) => {
+          mat.side = THREE.DoubleSide;
+          mat.transparent = false;
+          mat.opacity = 1;
+          mat.depthWrite = true;
+          mat.depthTest = true;
+
+          if ("alphaTest" in mat) mat.alphaTest = 0;
+          if ("roughness" in mat) mat.roughness = Math.min(mat.roughness ?? 1, 0.9);
+          if ("metalness" in mat) mat.metalness = Math.min(mat.metalness ?? 0, 0.25);
+
+          if ("emissive" in mat && mat.color) {
+            mat.emissive.copy(mat.color).multiplyScalar(0.06);
+            mat.emissiveIntensity = 0.42;
+          }
+
+          mat.needsUpdate = true;
+        });
+      });
+    }
+
+
+
+    
+    function createDoorPulseIndicator(){
+      const cfg = getResponsivePlacement("doorClickArea");
+
+      const group = new THREE.Group();
+      group.name = "yellowLightningDoorArea";
+      scene.add(group);
+
+      const w = cfg.size?.[0] || 1.15;
+      const h = cfg.size?.[1] || 2.05;
+
+      const shape = new THREE.Shape();
+
+      // Door-like rounded arch shape, matching the clickable door area better than a circle.
+      const halfW = w * 0.56;
+      const rectTop = h * 0.18;
+      const bottomY = -h * 0.50;
+      const archTopY = h * 0.54;
+
+      shape.moveTo(-halfW, bottomY);
+      shape.lineTo(-halfW, rectTop);
+      shape.bezierCurveTo(-halfW, archTopY, halfW, archTopY, halfW, rectTop);
+      shape.lineTo(halfW, bottomY);
+      shape.lineTo(-halfW, bottomY);
+
+      const points = shape.getPoints(96);
+
+      const mainLine = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(points),
+        new THREE.LineBasicMaterial({
+          color: 0xffdf49,
+          transparent: true,
+          opacity: 0.95,
+          linewidth: 1
+        })
+      );
+
+      const innerLine = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(points.map((p) => p.clone().multiplyScalar(0.86))),
+        new THREE.LineBasicMaterial({
+          color: 0xfff3a0,
+          transparent: true,
+          opacity: 0.65,
+          linewidth: 1
+        })
+      );
+
+      const outerLine = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(points.map((p) => p.clone().multiplyScalar(1.12))),
+        new THREE.LineBasicMaterial({
+          color: 0xffc400,
+          transparent: true,
+          opacity: 0.38,
+          linewidth: 1
+        })
+      );
+
+      // Jagged lightning accents on the sides to make it feel magical/clickable.
+      const boltPointsLeft = [
+        new THREE.Vector3(-halfW * 1.05, h * 0.32, 0.015),
+        new THREE.Vector3(-halfW * 1.32, h * 0.12, 0.015),
+        new THREE.Vector3(-halfW * 1.08, h * 0.06, 0.015),
+        new THREE.Vector3(-halfW * 1.38, -h * 0.18, 0.015),
+        new THREE.Vector3(-halfW * 1.10, -h * 0.10, 0.015),
+        new THREE.Vector3(-halfW * 1.23, -h * 0.36, 0.015)
+      ];
+
+      const boltPointsRight = boltPointsLeft.map((p) => new THREE.Vector3(-p.x, p.y, p.z));
+
+      const boltMat = new THREE.LineBasicMaterial({
+        color: 0xfff07a,
+        transparent: true,
+        opacity: 0.86,
+        linewidth: 1
+      });
+
+      const boltLeft = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(boltPointsLeft),
+        boltMat
+      );
+
+      const boltRight = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(boltPointsRight),
+        boltMat.clone()
+      );
+
+      const glowPlane = new THREE.Mesh(
+        new THREE.ShapeGeometry(shape),
+        new THREE.MeshBasicMaterial({
+          color: 0xffd447,
+          transparent: true,
+          opacity: 0.16,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide
+        })
+      );
+
+      const light = new THREE.PointLight(0xffd447, 12, 4.5, 1.65);
+      light.position.set(0, 0, 0.12);
+
+      group.add(glowPlane, outerLine, mainLine, innerLine, boltLeft, boltRight, light);
+
+      // The outline lives in the door's local XY plane, then the group receives the same
+      // transform as the invisible doorClickArea.
+      group.position.set(...cfg.pos);
+      group.rotation.set(...degToRadArr(cfg.rot || [0, 0, 0]));
+      group.scale.setScalar(cfg.scale || 1);
+
+      doorPulseIndicator = {
+        group,
+        mainLine,
+        innerLine,
+        outerLine,
+        glowPlane,
+        boltLeft,
+        boltRight,
+        light
+      };
+    }
+
+
+    function enhancePotionGlow(model, group){
+      const turquoise = new THREE.Color(0x27f5d2);
+      const deepBlue = new THREE.Color(0x00a8ff);
+
+      model.traverse((child) => {
+        if (!child.isMesh) return;
+
+        const materials = Array.isArray(child.material) ? child.material : [child.material].filter(Boolean);
+
+        materials.forEach((mat) => {
+          if ("emissive" in mat) {
+            mat.emissive.copy(turquoise);
+            mat.emissiveIntensity = 1.25;
+          }
+
+          if ("color" in mat && mat.color) {
+            mat.color.lerp(turquoise, 0.18);
+          }
+
+          mat.needsUpdate = true;
+        });
+      });
+
+      const auraGeometry = new THREE.SphereGeometry(0.82, 20, 20);
+      const auraMaterial = new THREE.MeshBasicMaterial({
+        color: 0x18f5d0,
+        transparent: true,
+        opacity: 0.24,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+
+      potionGlowAura = new THREE.Mesh(auraGeometry, auraMaterial);
+      potionGlowAura.name = "turquoisePotionAura";
+      potionGlowAura.renderOrder = 5;
+      group.add(potionGlowAura);
+
+      const auraOuterGeometry = new THREE.SphereGeometry(1.08, 20, 20);
+      const auraOuterMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00a8ff,
+        transparent: true,
+        opacity: 0.13,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+
+      const outerAura = new THREE.Mesh(auraOuterGeometry, auraOuterMaterial);
+      outerAura.name = "blueGreenPotionOuterAura";
+      outerAura.renderOrder = 4;
+      group.add(outerAura);
+
+      potionGlowLight = new THREE.PointLight(0x23ffd6, 18, 4.8, 1.35);
+      potionGlowLight.position.set(0, 0.08, 0);
+      group.add(potionGlowLight);
+
+      const smallCore = new THREE.PointLight(0x00a8ff, 9, 2.7, 1.8);
+      smallCore.position.set(0, 0.18, 0);
+      group.add(smallCore);
+
+      group.userData.potionGlow = {
+        aura: potionGlowAura,
+        outerAura,
+        light: potionGlowLight,
+        smallCore,
+        baseScale: 1
+      };
+    }
+
+
+    
+    function updateDoorPulseIndicator(delta){
+      if (!doorPulseIndicator) return;
+
+      const t = clock.elapsedTime;
+      const pulse = 1 + Math.sin(t * 3.8) * 0.045;
+      const flash = 0.5 + 0.5 * Math.sin(t * 8.5);
+
+      doorPulseIndicator.group.scale.setScalar((getResponsivePlacement("doorClickArea").scale || 1) * pulse);
+
+      doorPulseIndicator.mainLine.material.opacity = 0.72 + flash * 0.25;
+      doorPulseIndicator.innerLine.material.opacity = 0.42 + flash * 0.22;
+      doorPulseIndicator.outerLine.material.opacity = 0.20 + flash * 0.16;
+      doorPulseIndicator.glowPlane.material.opacity = 0.08 + flash * 0.10;
+
+      doorPulseIndicator.boltLeft.material.opacity = 0.36 + flash * 0.54;
+      doorPulseIndicator.boltRight.material.opacity = 0.36 + (1 - flash) * 0.54;
+
+      doorPulseIndicator.light.intensity = 8 + flash * 12;
+    }
+
+
+    function updatePotionGlow(delta){
+      const potion = objects.drinkme;
+      if (!potion || !potion.userData.potionGlow) return;
+
+      const glow = potion.userData.potionGlow;
+      const t = clock.elapsedTime;
+
+      const pulse = 1 + Math.sin(t * 4.2) * 0.09;
+      const slowPulse = 1 + Math.sin(t * 2.1 + 1.4) * 0.06;
+
+      glow.aura.scale.setScalar(pulse);
+      glow.outerAura.scale.setScalar(slowPulse);
+
+      glow.aura.material.opacity = 0.20 + Math.sin(t * 4.2) * 0.055;
+      glow.outerAura.material.opacity = 0.09 + Math.sin(t * 2.1 + 1.4) * 0.035;
+
+      glow.light.intensity = 16 + Math.sin(t * 4.2) * 4;
+      glow.smallCore.intensity = 8 + Math.sin(t * 5.4) * 2.5;
+
+      const potionPulse = 1 + Math.sin(t * 3.0) * 0.03;
+      potion.scale.setScalar((getResponsivePlacement("drinkme").scale || 1) * potionPulse);
+    }
+
+
+    function normalizeModelInsideParent(model, target, targetSize){
+      model.position.set(0, 0, 0);
+      model.rotation.set(0, 0, 0);
+      model.scale.set(1, 1, 1);
+
+      target.position.set(0, 0, 0);
+      target.rotation.set(0, 0, 0);
+      target.scale.set(1, 1, 1);
+
+      target.updateWorldMatrix(true, true);
+      model.updateWorldMatrix(true, true);
+
+      let box = new THREE.Box3().setFromObject(model);
+      const rawSize = new THREE.Vector3();
+      box.getSize(rawSize);
+
+      const maxAxis = Math.max(rawSize.x, rawSize.y, rawSize.z) || 1;
+      model.scale.setScalar(targetSize / maxAxis);
+
+      target.updateWorldMatrix(true, true);
+      model.updateWorldMatrix(true, true);
+
+      box = new THREE.Box3().setFromObject(model);
+      const scaledCenter = new THREE.Vector3();
+      box.getCenter(scaledCenter);
+
+      model.position.x -= scaledCenter.x;
+      model.position.y -= scaledCenter.y;
+      model.position.z -= scaledCenter.z;
+
+      target.updateWorldMatrix(true, true);
+    }
+
+    function cleanName(name){
+      return (name || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    }
+
+    function findAction(actions, candidates){
+      const keys = Object.keys(actions);
+      const cleanCandidates = candidates.map(cleanName);
+
+      return keys.find((key) => {
+        const cleaned = cleanName(key);
+        return cleanCandidates.some((candidate) => cleaned.includes(candidate));
+      }) || null;
+    }
+
+    function playAliceAnimation(candidates, options = {}){
+      if (!aliceMixer || !Object.keys(aliceActions).length) return null;
+
+      const {
+        fade = 0.22,
+        loop = THREE.LoopRepeat,
+        clamp = false,
+        timeScale = 1,
+        reset = true
+      } = options;
+
+      const key = findAction(aliceActions, candidates) || Object.keys(aliceActions)[0];
+      const nextAction = aliceActions[key];
+      if (!nextAction) return null;
+
+      nextAction.enabled = true;
+      nextAction.setLoop(loop, Infinity);
+      nextAction.clampWhenFinished = clamp;
+      nextAction.timeScale = timeScale;
+
+      if (currentAliceAction === nextAction) {
+        if (!nextAction.isRunning()) nextAction.play();
+        return nextAction;
+      }
+
+      if (reset) nextAction.reset();
+      nextAction.fadeIn(fade);
+      nextAction.play();
+
+      if (currentAliceAction) {
+        currentAliceAction.crossFadeTo(nextAction, fade, false);
+      }
+
+      currentAliceAction = nextAction;
+      return nextAction;
+    }
+
+    function makeLoopStable(action, timeScale = 1){
+      if (!action) return;
+      action.enabled = true;
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      action.clampWhenFinished = false;
+      action.timeScale = timeScale;
+      action.play();
+    }
+
+    async function loadGLBInto(key){
+      const cfg = placements[key];
+
+      const group = new THREE.Group();
+      group.name = key;
+      scene.add(group);
+      objects[key] = group;
+
+      try{
+        const gltf = await loader.loadAsync(cfg.path);
+        const model = gltf.scene;
+        model.name = `${key}_model`;
+
+        let meshCount = 0;
+
+        model.traverse((child) => {
+          if (child.isMesh) meshCount++;
+        });
+
+        if (meshCount === 0) {
+          throw new Error(`${key} heeft geen meshes.`);
+        }
+
+        setupMaterial(model);
+        group.add(model);
+        normalizeModelInsideParent(model, group, cfg.size || 1);
+        applyPlacement(key);
+
+        modelRoots[key] = model;
+
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.userData.objectKey = key;
+            pickables.push(child);
+          }
+        });
+
+        if (gltf.animations && gltf.animations.length) {
+          console.log(
+            `${key} animations:`,
+            gltf.animations.map(a => a.name)
+          );
+
+          const mixer = new THREE.AnimationMixer(model);
+          mixers.push({ mixer, speed: cfg.animationSpeed || 1, key });
+
+          if (key === "alice") {
+            aliceMixer = mixer;
+            aliceActions = {};
+
+            gltf.animations.forEach((clip) => {
+              const action = mixer.clipAction(clip);
+              action.enabled = true;
+              action.setLoop(THREE.LoopRepeat, Infinity);
+              action.clampWhenFinished = false;
+              aliceActions[clip.name] = action;
+            });
+
+            playAliceAnimation(["standing", "idle"], { fade: 0, timeScale: 0.9 });
+          }
+
+          else if (key === "rabbit") {
+            rabbitMixer = mixer;
+            const preferredClip =
+              gltf.animations.find((clip) => cleanName(clip.name).includes("hop")) ||
+              gltf.animations.find((clip) => cleanName(clip.name).includes("run")) ||
+              gltf.animations.find((clip) => cleanName(clip.name).includes("walk")) ||
+              gltf.animations[0];
+
+            rabbitAction = mixer.clipAction(preferredClip);
+            rabbitAction.reset();
+            rabbitAction.setLoop(THREE.LoopRepeat, Infinity);
+            rabbitAction.clampWhenFinished = false;
+            rabbitAction.timeScale = 0.25;
+            rabbitAction.play();
+          }
+
+          else {
+            const action = mixer.clipAction(gltf.animations[0]);
+            makeLoopStable(action, 0.8);
+          }
+        }
+
+        if (key === "drinkme") {
+          drinkmeModel = model;
+          enhancePotionGlow(model, group);
+        }
+
+        console.log(`✅ ${key} loaded:`, cfg.path);
+      } catch(error) {
+        console.error(`❌ ${key} failed:`, error);
+
+        const fallback = new THREE.Mesh(
+          new THREE.BoxGeometry(1, 1, 1),
+          new THREE.MeshStandardMaterial({
+            color: key === "rabbit" ? 0xffffff : 0xff6ba6,
+            side: THREE.DoubleSide
+          })
+        );
+
+        group.add(fallback);
+        normalizeModelInsideParent(fallback, group, cfg.size || 1);
+        applyPlacement(key);
+      }
+    }
+
+    function createDoorClickArea(){
+      const cfg = getResponsivePlacement("doorClickArea");
+
+      const geometry = new THREE.BoxGeometry(cfg.size[0], cfg.size[1], cfg.size[2]);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xffd56a,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      });
+
+      const doorArea = new THREE.Mesh(geometry, material);
+      doorArea.name = "doorClickArea";
+      doorArea.position.set(...cfg.pos);
+      doorArea.rotation.set(...degToRadArr(cfg.rot || [0, 0, 0]));
+      doorArea.scale.setScalar(cfg.scale || 1);
+      doorArea.userData.objectKey = "door";
+
+      scene.add(doorArea);
+      objects.doorClickArea = doorArea;
+      pickables.push(doorArea);
+    }
+
+    function createDoorVisual(){
+      const pivot = new THREE.Group();
+      pivot.name = "tinyDoorPivot";
+      pivot.position.set(6.05, -2.05, -1.92);
+
+      const doorGeometry = new THREE.PlaneGeometry(1.05, 2.05);
+      const doorMaterial = new THREE.MeshStandardMaterial({
+        color: 0x5a2c28,
+        roughness: 0.82,
+        metalness: 0.05,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.82
+      });
+
+      const door = new THREE.Mesh(doorGeometry, doorMaterial);
+      door.name = "tinyDoorVisual";
+      door.position.set(0.525, 0, 0);
+      pivot.add(door);
+
+      const knob = new THREE.Mesh(
+        new THREE.SphereGeometry(0.055, 18, 18),
+        new THREE.MeshStandardMaterial({
+          color: 0xffd56a,
+          emissive: 0xffd56a,
+          emissiveIntensity: 0.35,
+          roughness: 0.45
+        })
+      );
+      knob.position.set(0.86, -0.05, 0.035);
+      door.add(knob);
+
+      scene.add(pivot);
+      objects.doorPivot = pivot;
+    }
+
+    function addSparkle(x, y, options = {}){
+      if (sparkles.length >= MAX_SPARKLES) sparkles.splice(0, sparkles.length - MAX_SPARKLES + 1);
+      const burst = options.burst || false;
+      const radius = options.radius ?? 0;
+      const angle = Math.random() * Math.PI * 2;
+      const distance = radius * Math.sqrt(Math.random());
+
+      sparkles.push({
+        x: x + Math.cos(angle) * distance,
+        y: y + Math.sin(angle) * distance,
+        vx: options.vx ?? THREE.MathUtils.randFloatSpread(burst ? 120 : 20),
+        vy: options.vy ?? THREE.MathUtils.randFloat(burst ? -150 : -48, burst ? 70 : -8),
+        size: options.size ?? THREE.MathUtils.randFloat(burst ? 2.4 : 1.6, burst ? 8.4 : 4.9),
+        life: 0,
+        maxLife: options.maxLife ?? THREE.MathUtils.randFloat(burst ? 1.2 : 1.6, burst ? 3.0 : 3.2),
+        rotation: Math.random() * Math.PI,
+        spin: THREE.MathUtils.randFloatSpread(4.8),
+        twinkle: THREE.MathUtils.randFloat(4, 10),
+        color: options.color || "rgba(255, 248, 186, 0.98)",
+        shadowColor: options.shadowColor || "rgba(255, 237, 137, 0.95)"
+      });
+    }
+
+    function spawnSparkles(count, burst = false){
+      for(let i = 0; i < count; i++){
+        addSparkle(
+          Math.random() * innerWidth,
+          burst ? innerHeight * THREE.MathUtils.randFloat(0.05, 0.95) : innerHeight + 20,
+          { burst }
+        );
+      }
+    }
+
+    function worldToScreen(world){
+      const projected = new THREE.Vector3(world[0], world[1], world[2]).project(camera);
+
+      if(projected.z < -1 || projected.z > 1) return null;
+
+      return {
+        x: (projected.x * 0.5 + 0.5) * innerWidth,
+        y: (-projected.y * 0.5 + 0.5) * innerHeight
+      };
+    }
+
+    function objectToScreen(object){
+      if (!object) return null;
+
+      const worldPos = new THREE.Vector3();
+      object.getWorldPosition(worldPos);
+      const projected = worldPos.project(camera);
+
+      if(projected.z < -1 || projected.z > 1) return null;
+
+      return {
+        x: (projected.x * 0.5 + 0.5) * innerWidth,
+        y: (-projected.y * 0.5 + 0.5) * innerHeight
+      };
+    }
+
+    function spawnContinuousAnchorSparkles(delta){
+      const allowPotion = state.phase === "readyPotion" || state.phase === "walkToPotion";
+      const allowDoor = doorUnlocked || state.phase === "walkToDoor" || state.phase === "doorOpening" || state.phase === "crawlIntoDoor";
+
+      for(const [name, anchor] of Object.entries(continuousSparkleAnchors)){
+        if (name === "potionTop" && !allowPotion) continue;
+        if (name === "rabbitDoor" && !allowDoor) continue;
+
+        const screen = worldToScreen(anchor.world);
+        if(!screen) continue;
+
+        const rateMultiplier = (innerWidth <= 760 || isPhoneLandscapeMode()) ? 0.48 : 0.72;
+        anchor.accumulator += delta * anchor.rate * rateMultiplier;
+
+        while(anchor.accumulator >= 1){
+          anchor.accumulator -= 1;
+
+          addSparkle(
+            screen.x + anchor.screenOffset[0],
+            screen.y + anchor.screenOffset[1],
+            {
+              radius: (innerWidth <= 760 || isPhoneLandscapeMode()) ? anchor.radius * 0.62 : anchor.radius,
+              size: THREE.MathUtils.randFloat(1.5, (innerWidth <= 760 || isPhoneLandscapeMode()) ? 3.8 : 5.4),
+              maxLife: THREE.MathUtils.randFloat(1.0, 2.1),
+              color: name === "potionTop" ? "rgba(39, 245, 210, 0.98)" : "rgba(255, 248, 186, 0.98)",
+              shadowColor: name === "potionTop" ? "rgba(0, 190, 255, 0.95)" : "rgba(255, 237, 137, 0.95)"
+            }
+          );
+        }
+      }
+    }
+
+    function updatePotionHint(){
+      if (!potionHint.classList.contains("show")) return;
+
+      const screen = worldToScreen(continuousSparkleAnchors.potionTop.world);
+      if (!screen) return;
+
+      const left = THREE.MathUtils.clamp(screen.x, 90, innerWidth - 90);
+      const top = THREE.MathUtils.clamp(screen.y - 88, 88, innerHeight - 120);
+      potionHint.style.left = `${left}px`;
+      potionHint.style.top = `${top}px`;
+    }
+
+    function updateDoorHint(){
+      if (!doorHint.classList.contains("show")) return;
+      const screen = worldToScreen(getResponsivePlacement("doorClickArea").pos);
+      if (!screen) return;
+
+      const left = THREE.MathUtils.clamp(screen.x, 95, innerWidth - 95);
+      const top = THREE.MathUtils.clamp(screen.y - 78, 92, innerHeight - 110);
+      doorHint.style.left = `${left}px`;
+      doorHint.style.right = "auto";
+      doorHint.style.bottom = "auto";
+      doorHint.style.top = `${top}px`;
+    }
+
+    function spawnMagicAtWorld(world, options = {}){
+      const screen = worldToScreen(world);
+      const count = Math.min(options.count ?? 180, (innerWidth <= 760 || isPhoneLandscapeMode()) ? 150 : 240);
+      const radiusMin = options.radiusMin ?? 18;
+      const radiusMax = options.radiusMax ?? 135;
+      const yLift = options.yLift ?? -35;
+
+      if (!screen) {
+        spawnSparkles(count, true);
+        return;
+      }
+
+      for(let i = 0; i < count; i++){
+        addSparkle(
+          screen.x,
+          screen.y + yLift,
+          {
+            burst: true,
+            radius: THREE.MathUtils.randFloat(radiusMin, radiusMax),
+            vx: THREE.MathUtils.randFloat(-190, 190),
+            vy: THREE.MathUtils.randFloat(-245, 95),
+            size: THREE.MathUtils.randFloat(2.8, 11.5),
+            maxLife: THREE.MathUtils.randFloat(1.2, 3.25)
+          }
+        );
+      }
+    }
+
+    function spawnPotionMagic(){
+      spawnMagicAtWorld(continuousSparkleAnchors.potionTop.world, {
+        count: 230,
+        radiusMin: 8,
+        radiusMax: 155,
+        yLift: -20
+      });
+    }
+
+    function spawnAliceDoorMagic(){
+      spawnMagicAtWorld(getResponsivePlacement("doorClickArea").pos, {
+        count: 250,
+        radiusMin: 14,
+        radiusMax: 170,
+        yLift: -55
+      });
+    }
+
+    function spawnRabbitDisappearSparkles(){
+      const rabbitScreen = objectToScreen(objects.rabbit);
+
+      if (!rabbitScreen) {
+        spawnSparkles(innerWidth <= 760 ? 70 : 90, true);
+        return;
+      }
+
+      for(let i = 0; i < (innerWidth <= 760 ? 170 : 230); i++){
+        addSparkle(
+          rabbitScreen.x,
+          rabbitScreen.y - 30,
+          {
+            burst: true,
+            radius: THREE.MathUtils.randFloat(10, 155),
+            vx: THREE.MathUtils.randFloat(-190, 140),
+            vy: THREE.MathUtils.randFloat(-245, 70),
+            size: THREE.MathUtils.randFloat(2.8, 11.2),
+            maxLife: THREE.MathUtils.randFloat(1.1, 3.2)
+          }
+        );
+      }
+    }
+
+    function spawnDoorUnlockSparkles(){
+      const doorScreen = worldToScreen(getResponsivePlacement("doorClickArea").pos);
+
+      if (!doorScreen) {
+        spawnSparkles(innerWidth <= 760 ? 65 : 80, true);
+        return;
+      }
+
+      for(let i = 0; i < 120; i++){
+        addSparkle(
+          doorScreen.x + 25,
+          doorScreen.y - 45,
+          {
+            burst: true,
+            radius: THREE.MathUtils.randFloat(10, 95),
+            vx: THREE.MathUtils.randFloat(-100, 110),
+            vy: THREE.MathUtils.randFloat(-190, 45),
+            size: THREE.MathUtils.randFloat(2.4, 8.5),
+            maxLife: THREE.MathUtils.randFloat(1.0, 2.5)
+          }
+        );
+      }
+    }
+
+    function drawSparkle(ctx, x, y, radius, rotation, alpha, color = "rgba(255, 248, 186, 0.98)", shadowColor = "rgba(255, 237, 137, 0.95)"){
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      ctx.globalAlpha = alpha;
+      ctx.shadowBlur = (innerWidth <= 760 || isPhoneLandscapeMode()) ? 8 : 14;
+      ctx.shadowColor = shadowColor;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1, radius * 0.22);
+
+      ctx.beginPath();
+      ctx.moveTo(-radius, 0);
+      ctx.lineTo(radius, 0);
+      ctx.moveTo(0, -radius);
+      ctx.lineTo(0, radius);
+      ctx.moveTo(-radius * 0.55, -radius * 0.55);
+      ctx.lineTo(radius * 0.55, radius * 0.55);
+      ctx.moveTo(radius * 0.55, -radius * 0.55);
+      ctx.lineTo(-radius * 0.55, radius * 0.55);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function updateSparkles(delta){
+      sparkleCtx.clearRect(0, 0, innerWidth, innerHeight);
+
+      if(sparkleTimer > 0){
+        sparkleTimer -= delta;
+        sparkleSpawnAccumulator += delta;
+
+        while(sparkleSpawnAccumulator > 0.045){
+          sparkleSpawnAccumulator -= 0.045;
+          spawnSparkles(sparkleTimer > 3.2 ? 5 : 2, false);
+        }
+      }
+
+      for(let i = sparkles.length - 1; i >= 0; i--){
+        const s = sparkles[i];
+
+        s.life += delta;
+        s.x += s.vx * delta;
+        s.y += s.vy * delta;
+        s.vy += 18 * delta;
+        s.rotation += s.spin * delta;
+
+        const age = s.life / s.maxLife;
+
+        if(age >= 1){
+          sparkles.splice(i, 1);
+          continue;
+        }
+
+        const fadeIn = Math.min(age * 5, 1);
+        const fadeOut = 1 - Math.max(0, (age - 0.68) / 0.32);
+        const twinkle = 0.62 + Math.sin((s.life * s.twinkle) + s.size) * 0.38;
+        const alpha = Math.max(0, fadeIn * fadeOut * twinkle);
+
+        drawSparkle(sparkleCtx, s.x, s.y, s.size, s.rotation, alpha, s.color, s.shadowColor);
+      }
+    }
+
+    function getFixedCameraRig(){
+      const cfg = getResponsiveCameraConfig();
+      camera.fov = cfg.fov;
+      tempCameraPos.set(cfg.x, cfg.y, cfg.z);
+      tempLookTarget.set(cfg.targetX, cfg.targetY, cfg.targetZ);
+      camera.updateProjectionMatrix();
+      return { pos: tempCameraPos, target: tempLookTarget };
+    }
+
+    function updateCamera(){
+      const rig = getFixedCameraRig();
+      smoothCameraPos.lerp(rig.pos, 0.16);
+      smoothLookTarget.lerp(rig.target, 0.16);
+      camera.position.copy(smoothCameraPos);
+      camera.lookAt(smoothLookTarget);
+    }
+
+    function setObjectOpacity(root, opacity){
+      if (!root) return;
+
+      root.traverse((child) => {
+        if (!child.isMesh) return;
+
+        const materials = Array.isArray(child.material) ? child.material : [child.material].filter(Boolean);
+
+        materials.forEach((mat) => {
+          mat.transparent = opacity < 0.999;
+          mat.opacity = opacity;
+          mat.depthWrite = opacity > 0.2;
+          mat.needsUpdate = true;
+        });
+      });
+    }
+
+    function easeOutCubic(t){
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function easeInOutCubic(t){
+      return t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function startTween(object, to, duration, options = {}){
+      state.tween = {
+        object,
+        from: object.position.clone(),
+        to: to.clone(),
+        duration: Math.max(duration, 0.001),
+        elapsed: 0,
+        ease: options.ease || easeInOutCubic,
+        onUpdate: options.onUpdate || null,
+        onComplete: options.onComplete || null
+      };
+    }
+
+    function updateTween(delta){
+      if (!state.tween) return;
+
+      const tween = state.tween;
+      tween.elapsed += delta;
+
+      const progress = Math.min(tween.elapsed / tween.duration, 1);
+      const eased = tween.ease(progress);
+
+      tween.object.position.lerpVectors(tween.from, tween.to, eased);
+
+      if (tween.onUpdate) tween.onUpdate(eased, progress);
+
+      if (progress >= 1) {
+        state.tween = null;
+        if (tween.onComplete) tween.onComplete();
+      }
+    }
+
+    function startAliceIntro(){
+      const alice = objects.alice;
+      if (!alice) return;
+
+      state.phase = "introFall";
+      state.phaseTime = 0;
+
+      doorHint.classList.remove("show");
+      potionHint.classList.remove("show");
+
+      const aliceCfg = getResponsivePlacement("alice");
+      const base = new THREE.Vector3(...aliceCfg.pos);
+
+      alice.position.set(base.x, base.y + 1.55, base.z);
+      alice.rotation.set(
+        THREE.MathUtils.degToRad(aliceCfg.rot[0] - 9),
+        THREE.MathUtils.degToRad(aliceCfg.rot[1]),
+        THREE.MathUtils.degToRad(aliceCfg.rot[2] - 2)
+      );
+      alice.scale.setScalar(aliceCfg.scale);
+
+      setStatus("Down the rabbit hole...");
+      playAliceAnimation(["standing", "idle"], { fade: 0, timeScale: 0.9 });
+
+      startTween(
+        alice,
+        base,
+        1.65,
+        {
+          ease: easeOutCubic,
+          onUpdate: (eased) => {
+            alice.rotation.z = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-16, aliceCfg.rot[2], eased));
+            alice.rotation.x = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(aliceCfg.rot[0] - 15, aliceCfg.rot[0], eased));
+          },
+          onComplete: () => {
+            state.phase = "nervous";
+            state.phaseTime = 0;
+            setStatus("Where am I...?");
+            playAliceAnimation(["nervous", "nervously", "lookingaround", "look"], {
+              fade: 0.18,
+              timeScale: 0.72
+            });
+          }
+        }
+      );
+    }
+
+    function startPotionWalk(){
+      if (state.phase !== "readyPotion" || !objects.alice) return;
+
+      playDrinkMeSound();
+
+      state.phase = "walkToPotion";
+      state.phaseTime = 0;
+
+      potionHint.classList.remove("show");
+      setStatus("Alice sees the potion...");
+      playAliceAnimation(["walking", "walk"], { fade: 0.16, timeScale: 0.85 });
+
+      const to = new THREE.Vector3(...getResponsivePlacement("alicePotionWalkTarget").pos);
+
+      startTween(objects.alice, to, 2.45, {
+        ease: easeInOutCubic,
+        onUpdate: () => {
+          objects.alice.rotation.y = THREE.MathUtils.lerp(
+            objects.alice.rotation.y,
+            getPlacementRotY("alicePotionWalkTarget"),
+            0.08
+          );
+        },
+        onComplete: startShrink
+      });
+    }
+
+    function startShrink(){
+      state.phase = "shrinking";
+      state.phaseTime = 0;
+      hasDrunk = true;
+      shrinkProgress = 0;
+      doorUnlocked = false;
+
+      playAliceAnimation(["standing", "idle"], { fade: 0.18, timeScale: 0.85 });
+
+      sparkleTimer = 6.8;
+      sparkleSpawnAccumulator = 0;
+
+      spawnPotionMagic();
+      spawnSparkles((innerWidth <= 760 || isPhoneLandscapeMode()) ? 95 : 170, true);
+      setStatus("Now go and explore!");
+    }
+
+    function startDoorSequence(){
+      if (!doorUnlocked || state.doorSequenceStarted || !objects.alice) return;
+
+      state.doorSequenceStarted = true;
+      state.phase = "walkToDoor";
+      state.phaseTime = 0;
+
+      doorHint.classList.remove("show");
+      setStatus("Into Wonderland we go...");
+      playAliceAnimation(["walking", "walk"], { fade: 0.16, timeScale: 0.82 });
+
+      const to = new THREE.Vector3(...getResponsivePlacement("aliceDoorWalkTarget").pos);
+
+      startTween(objects.alice, to, 3.3, {
+        ease: easeInOutCubic,
+        onUpdate: () => {
+          objects.alice.rotation.y = THREE.MathUtils.lerp(
+            objects.alice.rotation.y,
+            getPlacementRotY("aliceDoorWalkTarget"),
+            0.075
+          );
+        },
+        onComplete: () => {
+          objects.alice.position.set(...getResponsivePlacement("aliceCrawlStart").pos);
+          objects.alice.rotation.y = getPlacementRotY("aliceCrawlStart");
+          state.phase = "doorOpening";
+          state.phaseTime = 0;
+          state.doorOpenProgress = 0;
+          state.crawlStarted = false;
+          spawnAliceDoorMagic();
+        }
+      });
+    }
+
+    function startCrawlIntoDoor(){
+      if (state.crawlStarted || !objects.alice) return;
+
+      state.crawlStarted = true;
+      state.phase = "crawlIntoDoor";
+      state.phaseTime = 0;
+
+      const crawlAction = playAliceAnimation(["crawl", "crawling"], {
+        fade: 0.12,
+        loop: THREE.LoopRepeat,
+        timeScale: 0.68
+      });
+
+      if (!crawlAction) {
+        playAliceAnimation(["walking", "walk"], { fade: 0.12, timeScale: 0.65 });
+      }
+
+      spawnAliceDoorMagic();
+
+      const to = new THREE.Vector3(...getResponsivePlacement("aliceCrawlDisappear").pos);
+
+      startTween(objects.alice, to, 1.85, {
+        ease: easeInOutCubic,
+        onUpdate: (eased) => {
+          objects.alice.rotation.y = THREE.MathUtils.lerp(
+            objects.alice.rotation.y,
+            getPlacementRotY("aliceCrawlDisappear"),
+            0.11
+          );
+          setObjectOpacity(modelRoots.alice, 1 - Math.max(0, (eased - 0.45) / 0.55));
+        },
+        onComplete: () => {
+          objects.alice.visible = false;
+          setTimeout(() => {
+            showLoadingAndGo("map.html");
+          }, 250);
+        }
+      });
+    }
+
+    function updateRabbitIntro(delta){
+      const rabbit = objects.rabbit;
+      const rabbitRoot = modelRoots.rabbit;
+
+      if (!rabbit || rabbitHasDisappeared) return;
+
+      rabbitIntroTime += delta;
+
+      const rabbitStartCfg = getResponsivePlacement("rabbit");
+      const rabbitEndCfg = getResponsivePlacement("rabbitDoorTarget");
+      const responsiveRabbitStartPos = new THREE.Vector3(...rabbitStartCfg.pos);
+      const responsiveRabbitRunEndPos = new THREE.Vector3(...rabbitEndCfg.pos);
+
+      const faceCamera = THREE.MathUtils.degToRad((rabbitStartCfg.rot && rabbitStartCfg.rot[1]) || rabbitFaceCameraY);
+      const faceRight = THREE.MathUtils.degToRad((rabbitEndCfg.rot && rabbitEndCfg.rot[1]) || rabbitRunRightY);
+
+      if (rabbitIntroTime < 1.15) {
+        rabbit.position.copy(responsiveRabbitStartPos);
+        rabbit.rotation.set(0, faceCamera, 0);
+
+        if (rabbitAction) rabbitAction.timeScale = 0.18;
+      }
+
+      else if (rabbitIntroTime < 1.85) {
+        const t = (rabbitIntroTime - 1.15) / 0.7;
+        const eased = easeOutCubic(t);
+
+        rabbit.position.copy(responsiveRabbitStartPos);
+        rabbit.rotation.set(
+          0,
+          THREE.MathUtils.lerp(faceCamera, faceRight, eased),
+          0
+        );
+
+        if (rabbitAction) rabbitAction.timeScale = 0.32;
+      }
+
+      else if (rabbitIntroTime < 5.15) {
+        const t = (rabbitIntroTime - 1.85) / 3.3;
+        const eased = easeInOutCubic(Math.min(t, 1));
+
+        rabbit.rotation.set(0, faceRight, 0);
+        rabbit.position.lerpVectors(responsiveRabbitStartPos, responsiveRabbitRunEndPos, eased);
+        rabbit.position.y = responsiveRabbitStartPos.y + Math.abs(Math.sin(rabbitIntroTime * 9.5)) * 0.095;
+
+        if (rabbitAction) rabbitAction.timeScale = 0.55;
+      }
+
+      else if (rabbitIntroTime < 6.25) {
+        const t = (rabbitIntroTime - 5.15) / 1.1;
+        const eased = easeOutCubic(Math.min(t, 1));
+
+        rabbit.rotation.y = faceRight;
+        rabbit.position.x = THREE.MathUtils.lerp(responsiveRabbitRunEndPos.x, responsiveRabbitRunEndPos.x + 0.24, eased);
+        rabbit.position.y = responsiveRabbitRunEndPos.y + Math.sin(eased * Math.PI) * 0.42;
+        rabbit.position.z = THREE.MathUtils.lerp(responsiveRabbitRunEndPos.z, responsiveRabbitRunEndPos.z - 0.12, eased);
+        rabbit.rotation.z = THREE.MathUtils.lerp(0, THREE.MathUtils.degToRad(-8), eased);
+
+        setObjectOpacity(rabbitRoot, 1 - eased);
+
+        if (!rabbitDisappearSparklesDone && t > 0.18) {
+          rabbitDisappearSparklesDone = true;
+          spawnRabbitDisappearSparkles();
+        }
+
+        if (rabbitAction) rabbitAction.timeScale = 0.48;
+      }
+
+      else {
+        rabbit.visible = false;
+        rabbitHasDisappeared = true;
+        setObjectOpacity(rabbitRoot, 0);
+      }
+    }
+
+    function updateAliceIdle(delta){
+      const alice = objects.alice;
+      if (!alice || state.tween || ["introFall", "nervous", "walkToPotion", "shrinking", "walkToDoor", "doorOpening", "crawlIntoDoor"].includes(state.phase)) return;
+
+      const t = clock.elapsedTime;
+
+      if (!hasDrunk) {
+        const aliceCfg = getResponsivePlacement("alice");
+        alice.rotation.x = THREE.MathUtils.degToRad(aliceCfg.rot[0] + Math.sin(t * 1.1) * 1.1);
+        alice.rotation.y = THREE.MathUtils.degToRad(aliceCfg.rot[1] + Math.sin(t * 1.2) * 2.0);
+        alice.rotation.z = THREE.MathUtils.degToRad(aliceCfg.rot[2] + Math.sin(t * 0.9) * 0.9);
+        alice.position.y = THREE.MathUtils.lerp(
+          alice.position.y,
+          aliceCfg.pos[1] + Math.sin(t * 2) * 0.015,
+          delta * 4
+        );
+      } else {
+        alice.rotation.y = THREE.MathUtils.lerp(alice.rotation.y, getPlacementRotY("aliceDoorWalkTarget"), delta * 2.2);
+        alice.rotation.x = THREE.MathUtils.lerp(alice.rotation.x, THREE.MathUtils.degToRad(-6), delta * 1.6);
+        alice.rotation.z = THREE.MathUtils.degToRad(Math.sin(t * 1.4) * 0.7);
+        // No Y drift after drinking: Alice must stay exactly where the story step placed her.
+      }
+    }
+
+    function updateStory(delta){
+      state.phaseTime += delta;
+
+      if (state.phase === "nervous" && state.phaseTime > 2.9) {
+        state.phase = "readyPotion";
+        state.phaseTime = 0;
+
+        setStatus("You’re too big... try something else.");
+        potionHint.classList.remove("show");
+        playAliceAnimation(["standing", "idle"], { fade: 0.25, timeScale: 0.85 });
+      }
+
+      if (state.phase === "shrinking" && objects.alice) {
+        shrinkProgress = Math.min(shrinkProgress + delta * 0.85, 1);
+
+        const eased = easeOutCubic(shrinkProgress);
+        const startScale = getResponsivePlacement("alice").scale;
+        const endScale = startScale * 0.25;
+
+        objects.alice.scale.setScalar(
+          THREE.MathUtils.lerp(startScale, endScale, eased)
+        );
+
+        objects.alice.rotation.y = THREE.MathUtils.lerp(
+          objects.alice.rotation.y,
+          getPlacementRotY("aliceDoorWalkTarget"),
+          delta * 1.5
+        );
+
+        if (shrinkProgress >= 1 && !doorUnlocked) {
+          doorUnlocked = true;
+          state.phase = "shrunkReady";
+          state.phaseTime = 0;
+          doorHint.classList.add("show");
+          spawnDoorUnlockSparkles();
+          setStatus("Tiny enough! Click the little door.");
+        }
+      }
+
+      if (state.phase === "doorOpening") {
+        state.doorOpenProgress = Math.min(state.doorOpenProgress + delta * 1.7, 1);
+
+        if (state.doorOpenProgress > 0.22) {
+          startCrawlIntoDoor();
+        }
+      }
+    }
+
+    function handlePointerDown(event){
+      pointer.x = (event.clientX / innerWidth) * 2 - 1;
+      pointer.y = -(event.clientY / innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+
+      const hits = raycaster.intersectObjects(pickables, true);
+      if (!hits.length) return;
+
+      const key = hits[0].object.userData.objectKey;
+
+      if (key === "drinkme") {
+        if (state.phase === "readyPotion") {
+          startPotionWalk();
+        }
+        return;
+      }
+
+      if (key === "door") {
+        if (!hasDrunk || !doorUnlocked) {
+          setStatus("You’re still too big, look around and find the puzzle.");
+          return;
+        }
+
+        if (state.phase === "shrunkReady") {
+          startDoorSequence();
+        }
+      }
+    }
+
+
+    function skipToMap(){
+      try{
+        sparkleTimer = Math.max(sparkleTimer || 0, 1.2);
+        sparkleSpawnAccumulator = 0;
+
+        if (typeof spawnSparkles === "function") {
+          spawnSparkles(120, true);
+        }
+
+        if (typeof spawnDoorUnlockSparkles === "function") {
+          spawnDoorUnlockSparkles();
+        }
+      } catch(error) {
+        console.warn("Skip sparkle fallback:", error);
+      }
+
+      setStatus("Skipping to the Wonderland map...");
+
+      if (skipBtn) {
+        skipBtn.disabled = true;
+        skipBtn.textContent = "Skipping...";
+      }
+
+      setTimeout(() => {
+        showLoadingAndGo("map.html");
+      }, 450);
+    }
+
+    if (skipBtn) {
+      skipBtn.addEventListener("click", skipToMap);
+    }
+
+    addEventListener("pointerdown", handlePointerDown);
+
+    await Promise.all(["alice", "rabbit", "drinkme"].map(loadGLBInto));
+    createDoorPulseIndicator();
+
+    createDoorClickArea();
+    syncResponsiveDoorObjects();
+    syncResponsiveSparkleAnchors();
+    startAliceIntro();
+
+    function animate(){
+      requestAnimationFrame(animate);
+
+      const delta = Math.min(clock.getDelta(), 0.033);
+
+      mixers.forEach(({ mixer, speed }) => {
+        mixer.update(delta * speed);
+      });
+
+      updateCamera();
+      updateTween(delta);
+      updateRabbitIntro(delta);
+      updateAliceIdle(delta);
+      updateStory(delta);
+      spawnContinuousAnchorSparkles(delta);
+      updatePotionHint();
+      updateDoorHint();
+      updateDoorPulseIndicator(delta);
+      syncResponsiveDoorObjects();
+      syncResponsiveSparkleAnchors();
+      updatePotionGlow(delta);
+      updateSparkles(delta);
+
+      if (drinkmeModel && !hasDrunk && state.phase === "readyPotion") {
+        drinkmeModel.rotation.y += delta * 0.9;
+        const pulse = 1 + Math.sin(clock.elapsedTime * 3.4) * 0.028;
+        objects.drinkme.scale.setScalar(getResponsivePlacement("drinkme").scale * pulse);
+      }
+
+      if (loadingScreen.classList.contains("show")) {
+        resizeLoadingRenderer();
+
+        if (loadingSmileModel) {
+          const pulse = 1 + Math.sin(clock.elapsedTime * 2.1) * 0.035;
+          if (loadingSmileModel.userData.normalizedMaxAxis) {
+            const desiredSize = isPhoneLandscapeMode() ? 1.65 : 2.55;
+            loadingSmileModel.userData.baseScale = desiredSize / loadingSmileModel.userData.normalizedMaxAxis;
+          }
+          loadingSmileModel.scale.setScalar((loadingSmileModel.userData.baseScale || loadingSmileModel.scale.x) * pulse);
+          loadingWrap.rotation.y = Math.sin(clock.elapsedTime * 0.75) * 0.08;
+          loadingWrap.rotation.z = Math.sin(clock.elapsedTime * 0.55) * 0.025;
+        }
+
+        loadingRenderer.render(loadingScene, loadingCamera);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight;
+      renderer.setPixelRatio(Math.min(devicePixelRatio, isPhoneLandscapeMode() ? 1.1 : (innerWidth <= 760 ? 1.15 : 1.5)));
+      renderer.setSize(innerWidth, innerHeight);
+      resizeSparkleCanvas();
+      resizeLoadingRenderer();
+      syncResponsiveDoorObjects();
+      syncResponsiveSparkleAnchors();
+    });
+  </script>
+</body>
+</html>

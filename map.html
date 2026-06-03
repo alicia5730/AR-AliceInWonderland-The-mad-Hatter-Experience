@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Alice in Wonderland Map</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Eagle+Lake&family=IM+Fell+English+SC&display=swap');
+
+    :root{
+      --pink:#d67acf;
+      --orange:#f6a13a;
+      --purple:#461c88;
+      --gold:#ffe56f;
+      --cream:#fff6e8;
+      --edge:clamp(12px, 2.4vmin, 34px);
+    }
+
+    *{
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    html,
+    body{
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:#120d18;
+      font-family:"Alice in Wonderland", "Eagle Lake", "IM Fell English SC", Georgia, "Times New Roman", serif;
+    }
+
+    body{
+      background-image:url("img/maps-background.png");
+      background-size:cover;
+      background-position:center center;
+      background-repeat:no-repeat;
+    }
+
+    .map-screen{
+      position:fixed;
+      inset:0;
+      width:100vw;
+      width:100dvw;
+      height:100vh;
+      height:100dvh;
+      overflow:hidden;
+      isolation:isolate;
+    }
+
+    .back{
+      position:absolute;
+      top:max(var(--edge), env(safe-area-inset-top));
+      left:max(var(--edge), env(safe-area-inset-left));
+      width:clamp(54px, 7.2vmin, 106px);
+      height:clamp(54px, 7.2vmin, 106px);
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      color:#1c1130;
+      text-decoration:none;
+      font-family:Georgia,"Times New Roman",serif;
+      font-size:clamp(32px, 4.4vmin, 62px);
+      font-weight:bold;
+      line-height:1;
+      z-index:20;
+      background:
+        radial-gradient(circle at 35% 30%, #fff8b8 0 18%, transparent 19%),
+        radial-gradient(circle, #ffe56f 0 54%, #e7b83e 56% 100%);
+      box-shadow:
+        0 0 22px rgba(255,225,105,.85),
+        0 0 46px rgba(255,205,74,.45);
+      border:2px solid rgba(255,255,255,.55);
+      transition:transform .18s ease, filter .18s ease;
+    }
+
+    .back:hover,
+    .back:focus-visible{
+      transform:scale(1.07) rotate(-4deg);
+      filter:brightness(1.08);
+      outline:none;
+    }
+
+    .title-box,
+    .choose-box{
+      border:none;
+      font-family:"Alice in Wonderland", "Eagle Lake", "IM Fell English SC", Georgia, "Times New Roman", serif;
+      clip-path:polygon(
+        1% 9%, 6% 4%, 12% 7%, 19% 4%, 27% 7%, 36% 3%,
+        46% 6%, 55% 3%, 66% 7%, 75% 4%, 86% 7%, 97% 5%,
+        99% 92%, 91% 96%, 80% 93%, 68% 97%, 56% 94%,
+        44% 97%, 32% 94%, 20% 97%, 9% 94%, 2% 92%
+      );
+    }
+
+    .title-box{
+      position:absolute;
+      top:max(5.8vh, calc(env(safe-area-inset-top) + 18px));
+      left:50%;
+      transform:translateX(-50%);
+      width:clamp(310px, 42vw, 620px);
+      min-height:clamp(68px, 10vh, 112px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px clamp(18px, 3vw, 42px);
+      background:var(--pink);
+      color:#090009;
+      text-align:center;
+      font-size:clamp(22px, 2.3vw, 38px);
+      line-height:1.1;
+      letter-spacing:.6px;
+      box-shadow:0 14px 38px rgba(0,0,0,.18);
+      z-index:9;
+    }
+
+    .choose-box{
+      position:absolute;
+      left:50%;
+      bottom:max(2.6vh, calc(env(safe-area-inset-bottom) + 14px));
+      transform:translateX(-50%);
+      width:clamp(315px, 41vw, 610px);
+      min-height:clamp(58px, 7.6vh, 82px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px clamp(18px, 3vw, 36px);
+      background:var(--orange);
+      color:#120400;
+      text-align:center;
+      font-size:clamp(22px, 2.15vw, 36px);
+      line-height:1.08;
+      letter-spacing:.6px;
+      box-shadow:0 14px 40px rgba(0,0,0,.20);
+      z-index:5;
+    }
+
+    .place{
+      --btnSize:clamp(66px, 6.7vmin, 104px);
+      position:absolute;
+      width:var(--btnSize);
+      height:var(--btnSize);
+      display:grid;
+      place-items:center;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.62);
+      outline:2px solid rgba(255,229,111,.88);
+      outline-offset:calc(var(--btnSize) * -0.105);
+      background:
+        radial-gradient(circle at 35% 30%, #fff8b8 0 14%, transparent 15%),
+        radial-gradient(circle, #d67acf 0 26%, #6b28ae 49%, #461c88 71%, #241043 100%);
+      color:#fffdf5;
+      cursor:pointer;
+      font-size:clamp(32px, 4.1vmin, 52px);
+      font-weight:900;
+      text-shadow:
+        0 3px 4px rgba(0,0,0,.82),
+        0 0 12px rgba(255,229,111,.72);
+      box-shadow:
+        0 0 0 4px rgba(255,229,111,.20),
+        0 0 18px rgba(255,225,105,.72),
+        0 0 40px rgba(214,122,207,.56),
+        0 14px 24px rgba(0,0,0,.50);
+      transform:translate(-50%, -50%);
+      transition:background .18s ease, box-shadow .18s ease, filter .18s ease, transform .18s ease;
+      z-index:13;
+      animation:buttonFloat 1.35s ease-in-out infinite alternate;
+      touch-action:manipulation;
+    }
+
+    .place > .number{
+      position:relative;
+      z-index:3;
+    }
+
+    .place::before{
+      content:"";
+      position:absolute;
+      inset:calc(var(--btnSize) * -0.18);
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(255,229,111,.34), rgba(214,122,207,.16) 42%, transparent 72%);
+      filter:blur(4px);
+      z-index:-1;
+      pointer-events:none;
+      animation:auraPulse 1.45s ease-in-out infinite alternate;
+    }
+
+    .place .sparkles{
+      position:absolute;
+      inset:calc(var(--btnSize) * -0.23);
+      pointer-events:none;
+      z-index:2;
+    }
+
+    .place .sparkle{
+      position:absolute;
+      width:clamp(10px, 1.45vmin, 16px);
+      height:clamp(10px, 1.45vmin, 16px);
+      transform:translate(-50%, -50%);
+      opacity:.72;
+      filter:drop-shadow(0 0 6px rgba(255,229,111,.9));
+      animation:twinkle 1.85s ease-in-out infinite;
+    }
+
+    .place .sparkle::before,
+    .place .sparkle::after{
+      content:"";
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%, -50%);
+      border-radius:999px;
+      background:linear-gradient(180deg, #fffef0, #ffe56f 64%, #f6c242);
+      box-shadow:0 0 9px rgba(255,229,111,.82);
+    }
+
+    .place .sparkle::before{ width:2px; height:100%; }
+    .place .sparkle::after{ width:100%; height:2px; }
+
+    .place .sparkle.s1{ left:17%; top:20%; animation-delay:0s; }
+    .place .sparkle.s2{ left:86%; top:30%; animation-delay:.55s; transform:translate(-50%, -50%) scale(.82); }
+    .place .sparkle.s3{ left:35%; top:88%; animation-delay:1.05s; transform:translate(-50%, -50%) scale(.72); }
+
+    .place:hover,
+    .place:focus-visible{
+      background:
+        radial-gradient(circle at 35% 30%, #fffdf0 0 16%, transparent 17%),
+        radial-gradient(circle, #ffe56f 0 22%, #d67acf 46%, #461c88 72%, #23113f 100%);
+      box-shadow:
+        0 0 0 5px rgba(255,229,111,.34),
+        0 0 26px rgba(255,229,111,.94),
+        0 0 58px rgba(214,122,207,.88),
+        0 18px 28px rgba(0,0,0,.54);
+      filter:brightness(1.18);
+      outline:none;
+      transform:translate(-50%, -50%) scale(1.10) rotate(-2deg);
+      animation:none;
+    }
+
+    .place:active{
+      transform:translate(-50%, -50%) scale(.96);
+    }
+
+    @keyframes twinkle{
+      0%,100%{ opacity:.18; transform:translate(-50%, -50%) scale(.45) rotate(0deg); }
+      50%{ opacity:.92; transform:translate(-50%, -50%) scale(1) rotate(45deg); }
+    }
+
+    @keyframes auraPulse{
+      from{ opacity:.45; transform:scale(.94); }
+      to{ opacity:.82; transform:scale(1.08); }
+    }
+
+    @keyframes buttonFloat{
+      from{ transform:translate(-50%, -50%) translateY(0) scale(1); filter:brightness(1); }
+      to{ transform:translate(-50%, -50%) translateY(-3px) scale(1.035); filter:brightness(1.08); }
+    }
+
+    .place.locked{
+      border-color:rgba(255,213,106,.72);
+      outline-color:rgba(255,255,255,.18);
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,.16) 0 12%, transparent 13%),
+        linear-gradient(135deg, rgba(96,93,103,.96), rgba(52,50,58,.96) 60%, rgba(27,25,31,.96));
+      color:rgba(255,255,255,.45);
+      cursor:not-allowed;
+      filter:grayscale(1) brightness(.82);
+      box-shadow:
+        0 0 0 4px rgba(40,40,45,.50),
+        0 0 18px rgba(255,213,106,.34),
+        0 12px 21px rgba(0,0,0,.48);
+      animation:none;
+    }
+
+    .place.locked:hover,
+    .place.locked:focus-visible{
+      transform:translate(-50%, -50%);
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,.16) 0 12%, transparent 13%),
+        linear-gradient(135deg, rgba(96,93,103,.96), rgba(52,50,58,.96) 60%, rgba(27,25,31,.96));
+      box-shadow:
+        0 0 0 4px rgba(40,40,45,.50),
+        0 0 18px rgba(255,213,106,.34),
+        0 12px 21px rgba(0,0,0,.48);
+      filter:grayscale(1) brightness(.82);
+    }
+
+    .place.locked .sparkle{
+      opacity:.36;
+      filter:drop-shadow(0 0 4px rgba(255,213,106,.55));
+    }
+
+    .place.locked::after{
+      content:"🔒";
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      font-family:Georgia, "Times New Roman", serif;
+      font-size:clamp(36px, 4.8vmin, 58px);
+      color:#ffd56a;
+      text-shadow:
+        0 0 8px rgba(255, 213, 106, 1),
+        0 0 18px rgba(255, 213, 106, .82),
+        0 3px 6px rgba(0,0,0,.78);
+      filter:grayscale(0) brightness(1.12);
+      transform:translateY(-1px);
+      pointer-events:none;
+    }
+
+    .place.locked > .number{ opacity:.12; }
+
+    .place-1{ left:94.2%; top:68.5%; }
+    .place-2{ left:33.5%; top:42.2%; }
+    .place-3{ left:20.2%; top:82.8%; }
+    .place-4{ left:57.2%; top:35%; }
+
+    .hint{
+      position:absolute;
+      left:50%;
+      top:18.5vh;
+      transform:translateX(-50%) translateY(-10px);
+      min-width:min(300px, 80vw);
+      max-width:min(520px, 90vw);
+      padding:13px 22px;
+      background:rgba(246,211,130,.96);
+      color:#1b0a22;
+      text-align:center;
+      font-size:clamp(16px, 1.4vw, 22px);
+      opacity:0;
+      pointer-events:none;
+      z-index:30;
+      box-shadow:0 12px 30px rgba(0,0,0,.22);
+      clip-path:polygon(1% 9%,7% 5%,16% 7%,24% 4%,37% 6%,48% 3%,60% 6%,73% 4%,85% 7%,97% 5%,99% 92%,91% 96%,79% 93%,65% 97%,52% 94%,39% 97%,26% 94%,14% 97%,2% 92%);
+      transition:opacity .2s ease, transform .2s ease;
+    }
+
+    .hint.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+
+    .rotate-warning{
+      position:fixed;
+      inset:0;
+      z-index:99;
+      display:none;
+      place-items:center;
+      padding:28px;
+      background:
+        linear-gradient(rgba(18,13,24,.78), rgba(18,13,24,.88)),
+        url("img/maps-background.png") center/cover no-repeat;
+      text-align:center;
+      color:var(--cream);
+    }
+
+    .rotate-card{
+      width:min(430px, 92vw);
+      padding:28px 24px;
+      background:rgba(70, 28, 136, .92);
+      border:3px solid rgba(255,229,111,.88);
+      box-shadow:
+        0 0 28px rgba(255,229,111,.52),
+        0 0 54px rgba(214,122,207,.46),
+        0 18px 38px rgba(0,0,0,.45);
+      clip-path:polygon(1% 9%,7% 5%,16% 7%,24% 4%,37% 6%,48% 3%,60% 6%,73% 4%,85% 7%,97% 5%,99% 92%,91% 96%,79% 93%,65% 97%,52% 94%,39% 97%,26% 94%,14% 97%,2% 92%);
+    }
+
+    .rotate-icon{
+      font-family:Georgia,"Times New Roman",serif;
+      font-size:58px;
+      margin-bottom:12px;
+      color:#ffd56a;
+      text-shadow:0 0 20px rgba(255,213,106,.9);
+      animation:turnPhone 1.25s ease-in-out infinite alternate;
+    }
+
+    .rotate-card h2{
+      font-size:clamp(27px, 8vw, 39px);
+      line-height:1.05;
+      margin-bottom:12px;
+      color:#ffd56a;
+      text-shadow:0 2px 8px rgba(0,0,0,.45);
+    }
+
+    .rotate-card p{
+      font-family:Georgia,"Times New Roman",serif;
+      font-size:18px;
+      line-height:1.35;
+    }
+
+    @keyframes turnPhone{
+      from{ transform:rotate(-8deg) scale(1); }
+      to{ transform:rotate(8deg) scale(1.06); }
+    }
+
+    @media (max-width:1180px) and (orientation:landscape){
+      .title-box{ width:clamp(300px, 46vw, 520px); min-height:clamp(58px, 9vh, 86px); }
+      .choose-box{ width:clamp(300px, 48vw, 540px); min-height:clamp(52px, 7.6vh, 72px); }
+      .place{ --btnSize:clamp(56px, 7.5vmin, 82px); }
+      .place-1{ left:92.8%; top:67%; }
+      .place-2{ left:33.6%; top:42.8%; }
+      .place-3{ left:20%; top:81%; }
+      .place-4{ left:57%; top:35%; }
+    }
+
+    @media (max-height:560px) and (orientation:landscape){
+      .back{
+        width:clamp(42px, 10vh, 58px);
+        height:clamp(42px, 10vh, 58px);
+        font-size:clamp(26px, 7vh, 34px);
+      }
+      .title-box{
+        top:max(10px, env(safe-area-inset-top));
+        width:clamp(250px, 42vw, 430px);
+        min-height:clamp(44px, 12vh, 58px);
+        padding:6px 16px;
+        font-size:clamp(17px, 4.8vh, 24px);
+      }
+      .choose-box{
+        bottom:max(8px, env(safe-area-inset-bottom));
+        width:clamp(270px, 48vw, 450px);
+        min-height:clamp(42px, 11vh, 56px);
+        padding:6px 16px;
+        font-size:clamp(17px, 4.5vh, 24px);
+      }
+      .place{
+        --btnSize:clamp(46px, 12vh, 62px);
+        font-size:clamp(24px, 6.6vh, 34px);
+      }
+      .place-1{ left:92%; top:67%; }
+      .place-2{ left:33%; top:42%; }
+      .place-3{ left:20%; top:78%; }
+      .place-4{ left:56.5%; top:35%; }
+      .hint{ top:17vh; font-size:15px; padding:10px 18px; }
+    }
+
+    @media (max-width:740px) and (orientation:landscape){
+      .place{ --btnSize:48px; }
+      .place-1{ left:90.5%; top:66%; }
+      .place-2{ left:33%; top:43%; }
+      .place-3{ left:20%; top:76%; }
+      .place-4{ left:56%; top:35%; }
+    }
+
+    @media (orientation:portrait) and (max-width:900px){
+      .rotate-warning{ display:grid; }
+      body{ background-position:center; }
+      .back{ width:56px; height:56px; font-size:34px; }
+      .title-box{
+        top:24px;
+        width:min(72vw, 440px);
+        min-height:68px;
+        padding:0 16px;
+        font-size:22px;
+      }
+      .choose-box{
+        width:min(82vw, 430px);
+        min-height:58px;
+        bottom:22px;
+        font-size:22px;
+      }
+      .place{ --btnSize:60px; font-size:30px; }
+      .place-1{ left:84%; top:63%; }
+      .place-2{ left:30%; top:40%; }
+      .place-3{ left:20%; top:74%; }
+      .place-4{ left:56%; top:32%; }
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      *, *::before, *::after{
+        animation-duration:.001ms!important;
+        animation-iteration-count:1!important;
+        transition-duration:.001ms!important;
+      }
+    }
+    /* Better phone landscape support */
+    @media (orientation: landscape) and (max-height: 520px) and (max-width: 950px){
+      .map-screen{
+        width:100svw;
+        height:100svh;
+      }
+
+      .back{
+        top:max(10px, env(safe-area-inset-top));
+        left:max(12px, env(safe-area-inset-left));
+        width:46px;
+        height:46px;
+        font-size:29px;
+      }
+
+      .title-box{
+        top:max(9px, env(safe-area-inset-top));
+        width:min(48vw, 390px);
+        min-width:0;
+        height:46px;
+        padding:0 12px;
+        font-size:clamp(15px, 2.9vw, 21px);
+      }
+
+      .choose-box{
+        bottom:max(8px, env(safe-area-inset-bottom));
+        width:min(52vw, 420px);
+        min-width:0;
+        height:42px;
+        padding:0 14px;
+        font-size:clamp(15px, 2.75vw, 20px);
+      }
+
+      .place{
+        width:48px;
+        height:48px;
+        font-size:25px;
+        border-width:2px;
+        outline-offset:-6px;
+        box-shadow:
+          0 0 0 3px rgba(70,28,136,.42),
+          0 0 15px rgba(255,229,111,.72),
+          0 0 31px rgba(214,122,207,.52),
+          0 10px 16px rgba(0,0,0,.44);
+      }
+
+      .place::before{
+        inset:-7px;
+      }
+
+      .place .sparkles{
+        inset:-10px;
+      }
+
+      .place .sparkle{
+        width:9px;
+        height:9px;
+      }
+
+      .place .sparkle::before{ height:9px; }
+      .place .sparkle::after{ width:9px; }
+
+      .place-1{ left:86vw; top:62vh; }
+      .place-2{ left:31vw; top:36vh; }
+      .place-3{ left:18vw; top:72vh; }
+      .place-4{ left:55vw; top:29vh; }
+
+      .place.locked::after{
+        font-size:30px;
+      }
+
+      .hint{
+        top:18vh;
+        min-width:200px;
+        padding:9px 16px;
+        font-size:15px;
+      }
+    }
+
+    @media (max-width:420px){
+      .title-box{
+        width:min(78vw, 360px);
+        font-size:20px;
+      }
+
+      .choose-box{
+        width:min(86vw, 360px);
+        font-size:20px;
+      }
+
+      .place{
+        width:54px;
+        height:54px;
+      }
+    }
+
+    /* Responsive lock fix: lock icon scales with the button instead of overpowering it */
+    .place.locked::after{
+      font-size:clamp(24px, 2.55vw, 40px) !important;
+      transform:translateY(-1px) scale(.92) !important;
+    }
+
+    @media (orientation: landscape) and (max-height: 520px) and (max-width: 950px){
+      .place.locked::after{
+        font-size:23px !important;
+        transform:translateY(-1px) scale(.88) !important;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 430px) and (max-width: 950px){
+      .place.locked::after{
+        font-size:20px !important;
+        transform:translateY(-1px) scale(.84) !important;
+      }
+    }
+
+    @media (max-width:420px){
+      .place.locked::after{
+        font-size:25px !important;
+        transform:translateY(-1px) scale(.86) !important;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+  <main class="map-screen" aria-label="Alice in Wonderland Map">
+    <a class="back" href="index.html" title="Back">←</a>
+
+    <div class="title-box">Alice in wonderland Map</div>
+
+    <button class="place place-1" type="button" data-place="1" data-url="index.html" aria-label="Go to home">
+      <span class="number">1</span>
+      <span class="sparkles" aria-hidden="true"><span class="sparkle s1"></span><span class="sparkle s2"></span><span class="sparkle s3"></span></span>
+    </button>
+    <button class="place place-2" type="button" data-place="2" data-url="drink-me.html" aria-label="Go to Drink Me">
+      <span class="number">2</span>
+      <span class="sparkles" aria-hidden="true"><span class="sparkle s1"></span><span class="sparkle s2"></span><span class="sparkle s3"></span></span>
+    </button>
+    <button class="place place-3" type="button" data-place="3" data-url="tea-party.html" aria-label="Go to Tea Party">
+      <span class="number">3</span>
+      <span class="sparkles" aria-hidden="true"><span class="sparkle s1"></span><span class="sparkle s2"></span><span class="sparkle s3"></span></span>
+    </button>
+    <button class="place place-4 locked" type="button" data-place="4" aria-label="Place 4 is locked" aria-disabled="true">
+      <span class="number">4</span>
+      <span class="sparkles" aria-hidden="true"><span class="sparkle s1"></span><span class="sparkle s2"></span><span class="sparkle s3"></span></span>
+    </button>
+
+    <div class="choose-box">Choose a place to explore</div>
+    <div class="hint" id="hint">Choose a place to explore</div>
+  </main>
+
+  <section class="rotate-warning" aria-label="Rotate device warning">
+    <div class="rotate-card">
+      <div class="rotate-icon">↻</div>
+      <h2>Turn your phone sideways</h2>
+      <p>Wonderland werkt het beste in landscape mode. Draai je telefoon om de map goed te spelen.</p>
+    </div>
+  </section>
+
+  <script>
+    const hint = document.getElementById("hint");
+
+    const names = {
+      "1": "Going back to the start...",
+      "2": "Drink Me & Discover",
+      "3": "Mad Hatter's Tea Party",
+      "4": "This place is locked... for now."
+    };
+
+    let hintTimer;
+
+    function showHint(text){
+      clearTimeout(hintTimer);
+      hint.textContent = text;
+      hint.classList.add("show");
+      hintTimer = setTimeout(() => hint.classList.remove("show"), 1200);
+    }
+
+    document.querySelectorAll(".place").forEach((button) => {
+      button.addEventListener("click", () => {
+        const place = button.dataset.place;
+
+        if (button.classList.contains("locked")) {
+          showHint(names[place]);
+          return;
+        }
+
+        showHint(names[place] || "Choose a place to explore");
+
+        const url = button.dataset.url;
+        if (url) {
+          setTimeout(() => {
+            window.location.href = url;
+          }, 350);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
