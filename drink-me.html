@@ -512,6 +512,7 @@
 </head>
 
 <body>
+  <audio id="drinkSound" src="assets/drink-me-sound.mp3" preload="auto"></audio>
   <div class="hud">
     <a class="back" href="index.html" title="Terug naar start">←</a>
     <button class="skip" id="skipBtn" type="button">Skip</button>
@@ -556,6 +557,25 @@
     const loadingScreen = document.getElementById("loadingScreen");
     const loadingCanvas = document.getElementById("loadingCanvas");
     const loadingScreenSeconds = 5;
+    const drinkSound = document.getElementById("drinkSound");
+
+    if (drinkSound) {
+      drinkSound.volume = 0.75;
+    }
+
+    function playDrinkMeSound(){
+      if (!drinkSound) return;
+
+      drinkSound.currentTime = 0;
+      const playPromise = drinkSound.play();
+
+      if (playPromise) {
+        playPromise.catch((error) => {
+          console.warn("Drink Me sound could not play:", error);
+        });
+      }
+    }
+
 
     const BASE_VIEWPORT = { width: 1366, height: 768, aspect: 1366 / 768 };
 
@@ -1980,6 +2000,8 @@
 
     function startPotionWalk(){
       if (state.phase !== "readyPotion" || !objects.alice) return;
+
+      playDrinkMeSound();
 
       state.phase = "walkToPotion";
       state.phaseTime = 0;

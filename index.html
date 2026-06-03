@@ -330,6 +330,8 @@
 
     <div class="status" id="status">Rabbit hole wordt geladen...</div>
 
+    <audio id="fallingSound" src="assets/falling.mp3" preload="auto"></audio>
+
     <section class="rotate-warning" aria-label="Rotate device warning">
         <div class="rotate-card">
             <div class="rotate-icon">↻</div>
@@ -348,6 +350,7 @@
         const statusEl = document.getElementById('status');
         const loadingScreen = document.getElementById('loadingScreen');
         const loadingCanvas = document.getElementById('loadingCanvas');
+        const fallingSound = document.getElementById('fallingSound');
         document.body.classList.add('ready-to-enter');
 
         const baseConfig = {
@@ -581,6 +584,20 @@
             return window.matchMedia('(orientation: portrait) and (max-width: 900px)').matches;
         }
 
+        function playFallingSound() {
+            if (!fallingSound) return;
+
+            fallingSound.currentTime = 0;
+            fallingSound.volume = 0.9;
+
+            const playPromise = fallingSound.play();
+            if (playPromise !== undefined) {
+                playPromise.catch((error) => {
+                    console.warn('Falling sound could not play:', error);
+                });
+            }
+        }
+
         function startJourney() {
             if (isPortraitBlocked()) {
                 setStatus('Turn your phone sideways first.');
@@ -589,6 +606,7 @@
 
             if (journeyStarted) return;
             journeyStarted = true;
+            playFallingSound();
             journeyStartTime = performance.now();
             content.classList.add('hidden');
             document.body.classList.remove('ready-to-enter');
